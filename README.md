@@ -1,6 +1,6 @@
 # quick_copy_paste
 
-A new Flutter project.
+A new Flutter project and didn't finish yet. I will use my spare time to complete it.
 
 ## Getting Started
 
