@@ -1,4 +1,12 @@
 # This is a generated file; do not edit or check into version control.
-hotkey_manager=/Users/rcadmin/flutter/.pub-cache/hosted/pub.dartlang.org/hotkey_manager-0.1.7/
-keypress_simulator=/Users/rcadmin/flutter/.pub-cache/hosted/pub.dartlang.org/keypress_simulator-0.1.0/
-pasteboard=/Users/rcadmin/flutter/.pub-cache/hosted/pub.dartlang.org/pasteboard-0.1.1/
+hotkey_manager=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/hotkey_manager-0.1.8/
+keypress_simulator=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/keypress_simulator-0.1.0/
+pasteboard=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/pasteboard-0.1.1/
+path_provider_linux=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/path_provider_linux-2.2.1/
+path_provider_windows=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/path_provider_windows-2.2.1/
+shared_preferences=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences-2.2.2/
+shared_preferences_android=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_android-2.2.1/
+shared_preferences_foundation=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_foundation-2.3.4/
+shared_preferences_linux=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_linux-2.3.2/
+shared_preferences_web=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_web-2.2.1/
+shared_preferences_windows=/Users/piaojin/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences_windows-2.3.2/

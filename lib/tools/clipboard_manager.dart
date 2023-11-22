@@ -10,8 +10,20 @@ class ClipboardManager {
   static final ClipboardManager instance = ClipboardManager._();
 
   Future<void> simulateCtrlC() async {
+    await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyC);
+  }
+
+  Future<void> simulateCtrlV() async {
+    await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyV);
+  }
+
+  Future<void> simulateCtrlZ() async {
+    await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyZ);
+  }
+
+  Future<void> simulateKeyboardPressWithCtrl(LogicalKeyboardKey key) async {
     await _keyPressSimulator.simulateKeyPress(
-      key: LogicalKeyboardKey.keyC,
+      key: key,
       modifiers: [
         Platform.isMacOS
             ? ModifierKey.metaModifier
@@ -20,7 +32,7 @@ class ClipboardManager {
     );
 
     await _keyPressSimulator.simulateKeyPress(
-      key: LogicalKeyboardKey.keyC,
+      key: key,
       modifiers: [
         Platform.isMacOS
             ? ModifierKey.metaModifier
@@ -32,6 +44,16 @@ class ClipboardManager {
 
   Future<String?> getTextFromSystemClipboard() async {
     return await Pasteboard.text;
+  }
+
+  Future<bool> isAccessAllowed() async {
+    return await _keyPressSimulator.isAccessAllowed();
+  }
+
+  Future<void> requestAccess({
+    bool onlyOpenPrefPane = false,
+  }) async {
+    return await _keyPressSimulator.requestAccess(onlyOpenPrefPane: onlyOpenPrefPane);
   }
 }
 

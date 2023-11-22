@@ -26,7 +26,9 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const Scaffold(
+        body: MyHomePage(title: 'Flutter Demo Home Page'),
+      ),
       builder: BotToastInit(),
     );
   }

@@ -1,14 +1,12 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:pasteboard/pasteboard.dart';
-import 'package:bot_toast/bot_toast.dart';
-import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:keypress_simulator/keypress_simulator.dart';
-import '../tools/clipboard_manager.dart';
 
-
-final hotKeyManager = HotKeyManager.instance;
+import 'clipboard_record_page.dart';
+import 'manage_hotkey_page.dart';
+import 'settings_page.dart';
+import 'package:quick_copy_paste/tools/clipboard_manager.dart';
 
 final kShortcutSimulateCtrlT = HotKey(
   KeyCode.keyT,
@@ -16,6 +14,7 @@ final kShortcutSimulateCtrlT = HotKey(
     Platform.isMacOS ? KeyModifier.meta : KeyModifier.control,
   ],
 );
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
@@ -35,55 +34,49 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  // void _copyText() async {
-  //   if (_controller.text.isEmpty) {
-  //     BotToast.showText(text: '啥都没输入，你要我复制什么🥴');
-  //   } else {
-  //     Pasteboard.writeText(_controller.text);
-  //   }
-  // }
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+  late TabController _tabcontroller;
+  int _currentTabIndex = 0;
 
-  // void _pasteText() async {
-  //   String? results = await Pasteboard.text;
-  //   _text = results ?? '啥都没有';
-  //   setState(() {});
-  // }
+  static const List<Tab> _homeTabList = <Tab>[
+    Tab(text: "记录管理", icon: Icon(Icons.music_note),),
+    Tab(text: "热键管理", icon: Icon(Icons.music_note),),
+    Tab(text: "设置", icon: Icon(Icons.music_note),),
+  ];
 
   @override
   void initState() {
     super.initState();
-    // TODO: implement initState
-// 初始化快捷键
+    _tabcontroller = TabController(length: _homeTabList.length, vsync: this);
+    _tabcontroller.addListener(() {
+      _currentTabIndex = _tabcontroller.index;
+      print('NewIndex: $_currentTabIndex');
+    });
+
+    // 初始化快捷键
     hotKeyManager.unregisterAll();
-    hotKeyManager.register(
-      kShortcutSimulateCtrlT,
-      keyDownHandler: (_) async {
-        print('simulateCtrlAKeyPress');
-        // simulateCtrlC();
-        clipboardManager.simulateCtrlC();
-      },
-    );
+    
+    // 请求权限
+    clipboardManager.isAccessAllowed().then((value) => {
+        if (!value) {
+          clipboardManager.requestAccess().then((value) => {
+              hotKeyManager.register(
+                kShortcutSimulateCtrlT,
+                keyDownHandler: (_) async {
+                  print('Simulate Ctrl T KeyPress');
+                  // await simulateCtrlC();
+                  await clipboardManager.simulateCtrlC();
+                },
+              )
+          })
+        }
+    });
   }
 
-  void simulateCtrlC() async {
-    await keyPressSimulator.simulateKeyPress(
-      key: LogicalKeyboardKey.keyC,
-      modifiers: [
-        Platform.isMacOS
-            ? ModifierKey.metaModifier
-            : ModifierKey.controlModifier,
-      ],
-    );
-    await keyPressSimulator.simulateKeyPress(
-      key: LogicalKeyboardKey.keyC,
-      modifiers: [
-        Platform.isMacOS
-            ? ModifierKey.metaModifier
-            : ModifierKey.controlModifier,
-      ],
-      keyDown: false,
-    );
+  @override
+  void dispose() {
+    _tabcontroller.dispose();
+    super.dispose();
   }
 
   @override
@@ -99,33 +92,17 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
+        bottom: TabBar(tabs: _homeTabList, controller: _tabcontroller),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-          ],
-        ),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: TabBarView(
+        controller: _tabcontroller,
+        children: const [
+          ClipboardRecordPage(title: "记录管理"),
+          ManageHotKeyPage(title: "记录管理"),
+          SettingsPage(title: "设置"),
+        ],
+      ),
+       // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
