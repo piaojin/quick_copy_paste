@@ -33,7 +33,7 @@ dependencies:
   pasteboard: ^0.1.1
   bot_toast: ^4.0.3
   keypress_simulator: ^0.1.0
-  hotkey_manager: ^0.1.7
+  hotkey_manager: ^0.1.8
   preference_list: ^0.0.1
   shared_preferences: ^2.0.15
 

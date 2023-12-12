@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:quick_copy_paste/models/hotkey.dart';
 import '../widgets/hotkey_item_widget.dart';
 import '../tools/store_manager.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 
 class ManageHotKeyPage extends StatefulWidget {
   const ManageHotKeyPage({Key? key, required this.title}) : super(key: key);
@@ -21,20 +23,36 @@ class ManageHotKeyPage extends StatefulWidget {
 }
 
 class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
-  final List _widgets = [];
+  final List<HotKeyItem> _items = [];
+  int? _selectIndex;
+  HotKey? _hotKey;
 
-  Widget getRow(int i) {
+  Widget createRow(int i) {
+    var item = _items[i];
     return GestureDetector(
       child: Padding(
         padding: const EdgeInsets.all(10.0),
-        child: HotKeyItemWidget(title: '$i'),
+        child: Container(
+          decoration: const BoxDecoration(
+          border: Border.fromBorderSide(
+            BorderSide (
+              width: 5,
+              color: Colors.green,
+              style: BorderStyle.solid
+          )
+          ),
+        ),
+          child: HotKeyItemWidget(index: i, didSelectClosure: (i) {
+            _selectIndex = i;
+            print("*********$i");
+        }, item: item),
+        )
       ),
       onTap: () {
-        setState(() {
-          _widgets.add(getRow(_widgets.length + 1));
+        print('row ${storeManager.getString('action')}');
+        // setState(() {
 
-          print('row ${storeManager.getString('action')}');
-        });
+        // });
       },
     );
   }
@@ -42,10 +60,10 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
   @override
   void initState() {
     super.initState();
-    for (int i = 0; i < 100; i++) {
-      _widgets.add(getRow(i));
-    }
-
+    var copyItem = HotKeyItem(false, "一键复制", HotKeyType.copy, null);
+    var pasteItem = HotKeyItem(false, "一键粘贴", HotKeyType.paste, null);
+    _items.add(copyItem);
+    _items.add(pasteItem);
     storeManager.setString('action', 'Start');
   }
 
@@ -58,13 +76,31 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      body: ListView.builder(
-        itemCount: _widgets.length,
-        itemBuilder: (BuildContext context, int position) {
-          return getRow(position);
-        },
-      ),
-      // This trailing comma makes auto-formatting nicer for build methods.
-    );
+        body: Stack(
+        children: [
+          Positioned(
+            child: Offstage(
+            offstage: true,
+            child: HotKeyRecorder(
+              onHotKeyRecorded: (hotKey) {
+                _hotKey = hotKey;
+                print("录制了快捷键");
+                setState(() {});
+              },
+            ),
+          ),
+          ),
+          Positioned(
+            child: ListView.builder(
+            itemCount: _items.length,
+            itemBuilder: (BuildContext context, int position) {
+              return createRow(position);
+            },
+          ),
+          ),
+        ],
+    )
+        // This trailing comma makes auto-formatting nicer for build methods.
+        );
   }
 }
