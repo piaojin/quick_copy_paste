@@ -1,8 +1,11 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
+import 'package:quick_copy_paste/tools/clipboard_manager.dart';
 import '../widgets/hotkey_item_widget.dart';
 import '../tools/store_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+
 
 class ManageHotKeyPage extends StatefulWidget {
   const ManageHotKeyPage({Key? key, required this.title}) : super(key: key);
@@ -27,44 +30,71 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
   int? _selectIndex;
   HotKey? _hotKey;
 
-  Widget createRow(int i) {
-    var item = _items[i];
-    return GestureDetector(
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Container(
-          decoration: const BoxDecoration(
-          border: Border.fromBorderSide(
-            BorderSide (
-              width: 5,
-              color: Colors.green,
-              style: BorderStyle.solid
-          )
-          ),
-        ),
-          child: HotKeyItemWidget(index: i, didSelectClosure: (i) {
-            _selectIndex = i;
-            print("*********$i");
-        }, item: item),
-        )
-      ),
-      onTap: () {
-        print('row ${storeManager.getString('action')}');
-        // setState(() {
-
-        // });
-      },
-    );
-  }
-
   @override
   void initState() {
     super.initState();
-    var copyItem = HotKeyItem(false, "一键复制", HotKeyType.copy, null);
-    var pasteItem = HotKeyItem(false, "一键粘贴", HotKeyType.paste, null);
+    var copyItem = HotKeyItem(true, false, "一键复制", HotKeyType.copy, null);
+    var pasteItem = HotKeyItem(true, false, "一键粘贴", HotKeyType.paste, null);
     _items.add(copyItem);
     _items.add(pasteItem);
     storeManager.setString('action', 'Start');
+  }
+
+  Widget createRow(int i) {
+    var item = _items[i];
+    return HotKeyItemWidget(
+        index: i,
+        didSelectClosure: (i) {
+          handleSelectAction(i);
+        },
+        item: item);
+  }
+
+  void handleSelectAction(int index) {
+    if (_selectIndex != null) {
+      _items[_selectIndex ?? index].isSelect = false;
+    }
+
+    _items[index].isSelect = true;
+    _selectIndex = index;
+    setState(() {});
+    print("*********$index");
+  }
+
+  void handleDeselectAction() {
+    if (_selectIndex != null) {
+      _items[_selectIndex ?? 0].isSelect = false;
+      _selectIndex = null;
+      setState(() {});
+    }
+  }
+
+  void handleRecordHotKeyAction(HotKey newHotKey) {
+    if (_selectIndex != null) {
+      var item = _items[_selectIndex ?? 0];
+      item.hotKey = newHotKey;
+      setState(() {});
+
+      hotKeyManager.unregister(newHotKey);
+
+      hotKeyManager.register(newHotKey, keyDownHandler: (hotKey) async {
+        print("触发快捷键: ${hotKey}");
+         BotToast.showText(text: "触发快捷键: ${hotKey}");
+         if (hotKey == item.hotKey) {
+          switch (item.type) {
+            case HotKeyType.copy:
+              await clipboardManager.simulateCtrlC();
+              break;
+            case HotKeyType.paste:
+              await clipboardManager.simulateCtrlV();
+              break;
+          }
+         }
+      });
+
+      print("录制了快捷键: ${newHotKey}");
+      BotToast.showText(text: "录制了快捷键: ${newHotKey}");
+    }
   }
 
   @override
@@ -77,28 +107,31 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
     // than having to individually change instances of widgets.
     return Scaffold(
         body: Stack(
-        children: [
-          Positioned(
-            child: Offstage(
+      children: [
+        Positioned(
+          child: Offstage(
             offstage: true,
             child: HotKeyRecorder(
               onHotKeyRecorded: (hotKey) {
-                _hotKey = hotKey;
-                print("录制了快捷键");
-                setState(() {});
+                handleRecordHotKeyAction(hotKey);
               },
             ),
           ),
-          ),
-          Positioned(
+        ),
+        Positioned(
+          child: GestureDetector(
             child: ListView.builder(
-            itemCount: _items.length,
-            itemBuilder: (BuildContext context, int position) {
-              return createRow(position);
+              itemCount: _items.length,
+              itemBuilder: (BuildContext context, int position) {
+                return createRow(position);
+              },
+            ),
+            onTap: () {
+              handleDeselectAction();
             },
           ),
-          ),
-        ],
+        ),
+      ],
     )
         // This trailing comma makes auto-formatting nicer for build methods.
         );

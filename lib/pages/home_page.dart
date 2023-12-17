@@ -5,7 +5,6 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 
 import 'clipboard_record_page.dart';
 import 'manage_hotkey_page.dart';
-import 'settings_page.dart';
 import 'package:quick_copy_paste/tools/clipboard_manager.dart';
 
 final kShortcutSimulateCtrlT = HotKey(
@@ -41,7 +40,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   static const List<Tab> _homeTabList = <Tab>[
     Tab(text: "记录管理", icon: Icon(Icons.music_note),),
     Tab(text: "热键管理", icon: Icon(Icons.music_note),),
-    Tab(text: "设置", icon: Icon(Icons.music_note),),
   ];
 
   @override
@@ -99,7 +97,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         children: const [
           ClipboardRecordPage(title: "记录管理"),
           ManageHotKeyPage(title: "记录管理"),
-          SettingsPage(title: "设置"),
         ],
       ),
        // This trailing comma makes auto-formatting nicer for build methods.

@@ -5,10 +5,11 @@ enum HotKeyType {
 }
 
 class HotKeyItem {
-   bool isEnable = false;
+   bool isEnable = true;
+   bool isSelect = false;
    String title = "";
    HotKey? hotKey;
    HotKeyType type = HotKeyType.copy;
 
-   HotKeyItem(this.isEnable,this.title, this.type, this.hotKey);
+   HotKeyItem(this.isEnable, this.isSelect, this.title, this.type, this.hotKey);
 }

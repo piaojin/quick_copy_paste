@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:async';
 import 'package:pasteboard/pasteboard.dart';
@@ -54,6 +55,27 @@ class ClipboardManager {
     bool onlyOpenPrefPane = false,
   }) async {
     return await _keyPressSimulator.requestAccess(onlyOpenPrefPane: onlyOpenPrefPane);
+  }
+
+  void requestKeyPermissionIfNeeded(void Function(bool)? handler) async {
+    clipboardManager.isAccessAllowed().then((value) => {
+        if (!value) {
+          clipboardManager.requestAccess().then((value) => {
+              if (handler != null) {
+                handler(true)
+              }
+          }).onError((error, stackTrace) {
+            if (handler != null) {
+                handler(false);
+              }
+            return <Set<void>>{};
+          })
+        } else {
+          if (handler != null) {
+            handler(true)
+          }
+        }
+    });
   }
 }
 

@@ -4,7 +4,12 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
 
 class HotKeyItemWidget extends StatefulWidget {
-  const HotKeyItemWidget({Key? key, required this.index, this.didSelectClosure, required this.item}) : super(key: key);
+  const HotKeyItemWidget(
+      {Key? key,
+      required this.index,
+      this.didSelectClosure,
+      required this.item})
+      : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -25,9 +30,7 @@ class HotKeyItemWidget extends StatefulWidget {
 
 class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
   String title = '热键名称';
-  final HotKey _hotKey = HotKey(
-    KeyCode.control
-  );
+  final HotKey _hotKey = HotKey(KeyCode.control);
 
   @override
   void initState() {
@@ -39,6 +42,19 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
     super.dispose();
   }
 
+  void handleCheckBoxAction(bool value) {
+    widget.item.isEnable = value;
+    setState(() {});
+  }
+
+  void handleTapAction() {
+    // widget.item.isSelect = !widget.item.isSelect;
+    if (widget.didSelectClosure != null) {
+      widget.didSelectClosure!(widget.index);
+    }
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -48,46 +64,52 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     // widget.didSelectClosure
-    return Center(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Checkbox(
-                value: widget.item.isEnable,
-                onChanged: (bool? value) {
-                  widget.item.isEnable = value ?? false;
-                  setState(() {
-                    
-                  });
-                },
-              ),
-              Text(widget.item.title),
-              Expanded(
-                child: GestureDetector(
-                  child: Container(
-                    color: Colors.blue,
-                    height: 30,
-                  ),
-                  onDoubleTap: () {
-                    if (widget.didSelectClosure != null) {
-                        widget.didSelectClosure!(widget.index);
-                    }
-                  },
+    
+    return GestureDetector(
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.fromBorderSide( 
+              BorderSide(
+                width: 3, color: Colors.green, style: widget.item.isSelect ? BorderStyle.solid : BorderStyle.none)
+            ),
+          ),
+          child: Center(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Checkbox(
+                      value: widget.item.isEnable,
+                      onChanged: (bool? value) {
+                        handleCheckBoxAction(value ?? false);
+                      },
+                    ),
+                    Text(widget.item.title),
+                    Expanded(
+                      child: Container(),
+                    ),
+                    Offstage(
+                      offstage: widget.item.hotKey == null,
+                      child: HotKeyVirtualView(
+                          hotKey: widget.item.hotKey ?? _hotKey),
+                    ),
+                  ],
                 ),
-              ),
-              Offstage(
-                offstage: widget.item.hotKey == null,
-                child: HotKeyVirtualView(hotKey: widget.item.hotKey ?? _hotKey),
-              ),
-            ],
+                Container(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: const Divider(height: 1.0, color: Colors.green),
+                ),
+              ],
+            ),
           ),
-          Container(
-            padding: const EdgeInsets.only(top: 10),
-            child: const Divider(height: 1.0, color: Colors.green),
-          ),
-        ],
+        ),
       ),
+      onTap: () {
+        print('row ${widget.index}');
+        handleTapAction();
+      },
     );
   }
 }
