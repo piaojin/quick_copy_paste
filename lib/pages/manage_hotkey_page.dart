@@ -1,7 +1,10 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:pasteboard/pasteboard.dart';
+import 'package:quick_copy_paste/models/clipboard_item.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
 import 'package:quick_copy_paste/tools/clipboard_manager.dart';
+import 'package:quick_copy_paste/tools/eventbus_manager.dart';
 import '../widgets/hotkey_item_widget.dart';
 import '../tools/store_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -84,6 +87,11 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
           switch (item.type) {
             case HotKeyType.copy:
               await clipboardManager.simulateCtrlC();
+              String? text = await Pasteboard.text;
+              text ??= "";
+              if (text.isNotEmpty) {
+                eventBusManager.eventBus.fire(ClipboardItem(text));
+              }
               break;
             case HotKeyType.paste:
               await clipboardManager.simulateCtrlV();

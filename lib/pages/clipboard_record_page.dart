@@ -1,6 +1,9 @@
-
-
+import 'dart:async';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:quick_copy_paste/models/clipboard_item.dart';
+import 'package:quick_copy_paste/pages/clipboard_item_widget.dart';
+import '../tools/eventbus_manager.dart';
 
 class ClipboardRecordPage extends StatefulWidget {
   const ClipboardRecordPage({Key? key, required this.title}) : super(key: key);
@@ -22,29 +25,32 @@ class ClipboardRecordPage extends StatefulWidget {
 
 class _ClipboardRecordPageState extends State<ClipboardRecordPage> {
 
-  final List _widgets = [];
+  final List<ClipboardItem> _items = [];
+  late StreamSubscription eventBusSubscription;
 
   @override
   void initState() {
     super.initState();
-    for (int i = 0; i < 100; i++) {
-      _widgets.add(getRow(i));
-    }
+    eventBusSubscription = eventBusManager.eventBus.on<ClipboardItem>().listen((event) {
+      _items.add(event);
+      if (mounted) {
+        setState(() {});
+      }
+      String text = event.text ?? "";
+      print("收到event bus: ${text}");
+      BotToast.showText(text: "收到event bus: ${text}");
+    });
   }
 
-  Widget getRow(int i) {
-    return GestureDetector(
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Text("Row $i"),
-      ),
-      onTap: () {
-        setState(() {
-          _widgets.add(getRow(_widgets.length + 1));
-          print('row $i');
-        });
-      },
-    );
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  Widget createRow(int i) {
+    var item = _items[i];
+    item.index = i;
+    return ClipboardItemWidget(item: item);
   }
 
   @override
@@ -57,9 +63,9 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> {
     // than having to individually change instances of widgets.
     return Scaffold(
       body: ListView.builder(
-        itemCount: _widgets.length,
+        itemCount: _items.length,
         itemBuilder: (BuildContext context, int position) {
-          return getRow(position);
+          return createRow(position);
         },
       ),
        // This trailing comma makes auto-formatting nicer for build methods.
