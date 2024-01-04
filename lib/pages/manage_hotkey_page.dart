@@ -1,13 +1,19 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:pasteboard/pasteboard.dart';
+import 'package:quick_copy_paste/common/pj_const.dart';
 import 'package:quick_copy_paste/models/clipboard_item.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
 import 'package:quick_copy_paste/tools/clipboard_manager.dart';
 import 'package:quick_copy_paste/tools/eventbus_manager.dart';
+import '../tools/hotkey_item_manager.dart';
 import '../widgets/hotkey_item_widget.dart';
 import '../tools/store_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class ManageHotKeyPage extends StatefulWidget {
@@ -36,11 +42,23 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
   @override
   void initState() {
     super.initState();
-    var copyItem = HotKeyItem(true, false, "一键复制", HotKeyType.copy, null);
-    var pasteItem = HotKeyItem(true, false, "一键粘贴", HotKeyType.paste, null);
-    _items.add(copyItem);
-    _items.add(pasteItem);
-    storeManager.setString('action', 'Start');
+    scheduleMicrotask(() async {
+      _items.addAll(await getItems());
+      storeManager.setString('action', 'Start');
+      setState(() {});
+    });
+  }
+
+  Future<List<HotKeyItem>> getItems() async {
+    List<HotKeyItem> items = [];
+    var copyItem = await hotKeyItemManager.getCacheKeyItem(HotKeyType.copy);
+    copyItem ??= hotKeyItemManager.createKeyItem(HotKeyType.copy);
+    items.add(copyItem);
+
+    var pasteItem = await hotKeyItemManager.getCacheKeyItem(HotKeyType.paste);
+    pasteItem ??= hotKeyItemManager.createKeyItem(HotKeyType.paste);
+    items.add(pasteItem);
+    return items;
   }
 
   Widget createRow(int i) {
@@ -72,7 +90,7 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
     }
   }
 
-  void handleRecordHotKeyAction(HotKey newHotKey) {
+  Future<void> handleRecordHotKeyAction(HotKey newHotKey) async {
     if (_selectIndex != null) {
       var item = _items[_selectIndex ?? 0];
       item.hotKey = newHotKey;
@@ -100,7 +118,8 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
          }
       });
 
-      print("录制了快捷键: ${newHotKey}");
+      await hotKeyItemManager.saveHotKeyItem(item);
+      print("录制了快捷键: ${newHotKey}, ${json.encode(item.toJson())}");
       BotToast.showText(text: "录制了快捷键: ${newHotKey}");
     }
   }
