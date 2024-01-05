@@ -23,10 +23,13 @@ class ClipboardRecordPage extends StatefulWidget {
   State<ClipboardRecordPage> createState() => _ClipboardRecordPageState();
 }
 
-class _ClipboardRecordPageState extends State<ClipboardRecordPage> {
+class _ClipboardRecordPageState extends State<ClipboardRecordPage> with AutomaticKeepAliveClientMixin {
 
   final List<ClipboardItem> _items = [];
   late StreamSubscription eventBusSubscription;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -55,6 +58,7 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //

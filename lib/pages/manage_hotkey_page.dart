@@ -34,7 +34,7 @@ class ManageHotKeyPage extends StatefulWidget {
   State<ManageHotKeyPage> createState() => _ManageHotKeyPageState();
 }
 
-class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
+class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepAliveClientMixin {
   final List<HotKeyItem> _items = [];
   int? _selectIndex;
   HotKey? _hotKey;
@@ -126,6 +126,7 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -163,4 +164,7 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> {
         // This trailing comma makes auto-formatting nicer for build methods.
         );
   }
+  
+  @override
+  bool get wantKeepAlive => true;
 }
