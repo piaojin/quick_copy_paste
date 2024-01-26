@@ -1,28 +1,30 @@
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:async';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:keypress_simulator/keypress_simulator.dart';
 import 'package:flutter/services.dart';
+
+typedef SimulateCompletion = Function();
 
 class ClipboardManager {
   ClipboardManager._();
   /// The shared instance of [ClipboardManager].
   static final ClipboardManager instance = ClipboardManager._();
 
-  Future<void> simulateCtrlC() async {
-    await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyC);
+  Future<void> simulateCtrlC(SimulateCompletion? completion) async {
+    return await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyC, completion);
   }
 
-  Future<void> simulateCtrlV() async {
-    await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyV);
+  Future<void> simulateCtrlV(SimulateCompletion? completion) async {
+    return await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyV, completion);
   }
 
-  Future<void> simulateCtrlZ() async {
-    await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyZ);
+  Future<void> simulateCtrlZ(SimulateCompletion? completion) async {
+    return await simulateKeyboardPressWithCtrl(LogicalKeyboardKey.keyZ, completion);
   }
 
-  Future<void> simulateKeyboardPressWithCtrl(LogicalKeyboardKey key) async {
+  Future<void> simulateKeyboardPressWithCtrl(LogicalKeyboardKey key, SimulateCompletion? completion) async {
     await _keyPressSimulator.simulateKeyPress(
       key: key,
       modifiers: [
@@ -41,6 +43,10 @@ class ClipboardManager {
       ],
       keyDown: false,
     );
+
+    if (completion != null) {
+      completion();
+    }
   }
 
   Future<String?> getTextFromSystemClipboard() async {

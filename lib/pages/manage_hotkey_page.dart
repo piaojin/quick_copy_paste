@@ -9,6 +9,7 @@ import 'package:quick_copy_paste/models/clipboard_item.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
 import 'package:quick_copy_paste/tools/clipboard_manager.dart';
 import 'package:quick_copy_paste/tools/eventbus_manager.dart';
+import '../tools/copy_paste_event.dart';
 import '../tools/hotkey_item_manager.dart';
 import '../widgets/hotkey_item_widget.dart';
 import '../tools/store_manager.dart';
@@ -91,34 +92,41 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
   Future<void> handleRecordHotKeyAction(HotKey newHotKey) async {
     if (_selectIndex != null) {
       var item = _items[_selectIndex ?? 0];
+      var oldHotKey = item.hotKey;
+      if (oldHotKey != null) {
+        hotKeyManager.unregister(oldHotKey);
+      }
       item.hotKey = newHotKey;
       setState(() {});
 
       hotKeyManager.unregister(newHotKey);
 
       hotKeyManager.register(newHotKey, keyDownHandler: (hotKey) async {
-        print("触发快捷键: ${hotKey}");
-         BotToast.showText(text: "触发快捷键: ${hotKey}");
-         if (hotKey == item.hotKey) {
+        print("触发快捷键: $hotKey");
+         BotToast.showText(text: "触发快捷键: $hotKey");
+         if (item.hotKey?.isTheSame(hotKey) == true) {
           switch (item.type) {
             case HotKeyType.copy:
-              await clipboardManager.simulateCtrlC();
-              String? text = await Pasteboard.text;
-              text ??= "";
-              if (text.isNotEmpty) {
-                eventBusManager.eventBus.fire(ClipboardItem(text));
-              }
+              await clipboardManager.simulateCtrlC(() {
+                Future.delayed(const Duration(milliseconds: 500), () async {
+                  String? text = await Pasteboard.text;
+                  text ??= "";
+                  if (text.isNotEmpty) {
+                      eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.copy, ClipboardItem(text)));
+                  } 
+                });
+              });
               break;
             case HotKeyType.paste:
-              await clipboardManager.simulateCtrlV();
+              eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.paste, null));
               break;
           }
          }
       });
 
       await hotKeyItemManager.saveHotKeyItem(item);
-      print("录制了快捷键: ${newHotKey}, ${json.encode(item.toJson())}");
-      BotToast.showText(text: "录制了快捷键: ${newHotKey}");
+      print("录制了快捷键: $newHotKey, ${json.encode(item.toJson())}");
+      BotToast.showText(text: "录制了快捷键: $newHotKey");
     }
   }
 

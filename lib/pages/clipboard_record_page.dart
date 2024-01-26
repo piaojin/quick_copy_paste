@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:pasteboard/pasteboard.dart';
 import 'package:quick_copy_paste/models/clipboard_item.dart';
 import 'package:quick_copy_paste/pages/clipboard_item_widget.dart';
+import '../models/hotkey.dart';
+import '../tools/clipboard_manager.dart';
+import '../tools/copy_paste_event.dart';
 import '../tools/eventbus_manager.dart';
 
 class ClipboardRecordPage extends StatefulWidget {
@@ -26,7 +30,7 @@ class ClipboardRecordPage extends StatefulWidget {
 class _ClipboardRecordPageState extends State<ClipboardRecordPage> with AutomaticKeepAliveClientMixin {
 
   final List<ClipboardItem> _items = [];
-  late StreamSubscription eventBusSubscription;
+  late StreamSubscription copyPasteSubscription;
 
   @override
   bool get wantKeepAlive => true;
@@ -34,20 +38,44 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
   @override
   void initState() {
     super.initState();
-    eventBusSubscription = eventBusManager.eventBus.on<ClipboardItem>().listen((event) {
-      _items.add(event);
-      if (mounted) {
-        setState(() {});
-      }
-      String text = event.text ?? "";
-      print("收到event bus: ${text}");
-      BotToast.showText(text: "收到event bus: ${text}");
+    copyPasteSubscription = eventBusManager.eventBus.on<CopyPasteEvent>().listen((event) {
+      handleCopyPasteEvent(event);
     });
   }
 
   @override
   void dispose() {
     super.dispose();
+    copyPasteSubscription.cancel();
+  }
+
+  void handleCopyPasteEvent(CopyPasteEvent event) {
+    switch (event.type) {
+        case HotKeyType.copy:
+          var item = event.item;
+          if (item != null) {
+            _items.add(item);
+            setState(() {});
+          String text = item.text ?? "";
+          BotToast.showText(text: "收到event bus: $text");
+        }
+        break;
+        case HotKeyType.paste:
+          if (_items.isEmpty) {
+            return;
+          }
+          // 取到列表的首行数据并且设置到系统粘贴板里，在模拟粘贴。
+          var text = _items.first.text;
+          if (text != null) {
+            scheduleMicrotask(() async {
+                Pasteboard.writeText(text);
+                await clipboardManager.simulateCtrlV(null);
+                _items.removeAt(0);
+                setState(() {});
+            });
+          }
+          break; 
+      }
   }
 
   Widget createRow(int i) {

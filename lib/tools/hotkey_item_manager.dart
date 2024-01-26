@@ -6,6 +6,7 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
 import 'package:quick_copy_paste/tools/clipboard_manager.dart';
+import 'package:quick_copy_paste/tools/copy_paste_event.dart';
 import 'package:quick_copy_paste/tools/eventbus_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,7 +45,7 @@ class HotKeyItemCacheManager {
 
   Future<HotKeyItem?> getHotKeyItem(HotKeyType type) async {
     String? cacheKeyJosn = (await getSharedPreferences()).getString(type.getKeyInfo().$1);
-    print("cacheKeyJosn: ${cacheKeyJosn}");
+    print("cacheKeyJosn: $cacheKeyJosn");
     if (cacheKeyJosn == null) {
       return null;
     }
@@ -57,7 +58,7 @@ class HotKeyItemCacheManager {
       await removeHotKeyItem(type);
       await removeHotKeyType(type);
       await removeHotKeyItemKey(type);
-      print("catch error: ${e}");
+      print("catch error: $e");
     }
 
     return keyItem;
@@ -71,14 +72,24 @@ class HotKeyItemCacheManager {
     (await getSharedPreferences()).remove(type.getKeyInfo().$1);
   }
 
+  Future<void> removeHotKeyItemBy(HotKeyItem hotKeyItem) async {
+    await removeHotKeyItemKey(hotKeyItem.type);
+    await removeHotKeyType(hotKeyItem.type);
+    await removeHotKeyItem(hotKeyItem.type);
+  }
+
   Future<void> saveHotKeyItemKey(HotKeyType type) async {
     List<String> list = await getAllHotKeyItemKeys();
-    list.add(type.getKeyInfo().$1);
+    if (!list.contains(type.getKeyInfo().$1)) {
+      list.add(type.getKeyInfo().$1);
+    }
     (await getSharedPreferences()).setStringList(_allHotKeyItemKeys, list);
   }
 
   Future<List<String>> getAllHotKeyItemKeys() async {
-    return (await getSharedPreferences()).getStringList(_allHotKeyItemKeys) ?? [];
+    var list = (await getSharedPreferences()).getStringList(_allHotKeyItemKeys) ?? [];
+    var set = Set<String>.from(list);
+    return set.toList();
   }
 
   Future<void> removeHotKeyItemKey(HotKeyType type) async {
@@ -128,19 +139,22 @@ extension RegisterHotKey on HotKeyManager {
       var hotKey = item.hotKey;
       if (hotKey != null) {
         await hotKeyManager.register(hotKey, keyDownHandler: (hotKey) async {
-            BotToast.showText(text: "触发快捷键: ${hotKey}");
+            BotToast.showText(text: "触发快捷键: $hotKey");
             if (item.hotKey?.isTheSame(hotKey) == true) {
               switch (item.type) {
                 case HotKeyType.copy:
-                  await clipboardManager.simulateCtrlC();
-                  String? text = await Pasteboard.text;
-                  text ??= "";
-                  if (text.isNotEmpty) {
-                      eventBusManager.eventBus.fire(ClipboardItem(text));
-                  }
+                  await clipboardManager.simulateCtrlC(() {
+                    Future.delayed(const Duration(milliseconds: 500), () async {
+                      String? text = await Pasteboard.text;
+                      text ??= "";
+                      if (text.isNotEmpty) {
+                          eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.copy, ClipboardItem(text)));
+                      } 
+                    });
+                  });
                   break;
                 case HotKeyType.paste:
-                  await clipboardManager.simulateCtrlV();
+                  eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.paste, null));
                   break;
               }
             }
