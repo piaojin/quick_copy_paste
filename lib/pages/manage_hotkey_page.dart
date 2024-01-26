@@ -44,18 +44,17 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     super.initState();
     scheduleMicrotask(() async {
       _items.addAll(await getItems());
-      storeManager.setString('action', 'Start');
       setState(() {});
     });
   }
 
   Future<List<HotKeyItem>> getItems() async {
     List<HotKeyItem> items = [];
-    var copyItem = await hotKeyItemManager.getCacheKeyItem(HotKeyType.copy);
+    var copyItem = await hotKeyItemManager.getHotKeyItem(HotKeyType.copy);
     copyItem ??= hotKeyItemManager.createKeyItem(HotKeyType.copy);
     items.add(copyItem);
 
-    var pasteItem = await hotKeyItemManager.getCacheKeyItem(HotKeyType.paste);
+    var pasteItem = await hotKeyItemManager.getHotKeyItem(HotKeyType.paste);
     pasteItem ??= hotKeyItemManager.createKeyItem(HotKeyType.paste);
     items.add(pasteItem);
     return items;
@@ -79,7 +78,6 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     _items[index].isSelect = true;
     _selectIndex = index;
     setState(() {});
-    print("*********$index");
   }
 
   void handleDeselectAction() {

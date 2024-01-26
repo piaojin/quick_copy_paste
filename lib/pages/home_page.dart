@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
+import '../tools/hotkey_item_manager.dart';
 import 'clipboard_record_page.dart';
 import 'manage_hotkey_page.dart';
 import 'package:quick_copy_paste/tools/clipboard_manager.dart';
@@ -48,24 +50,19 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     _tabcontroller = TabController(length: _homeTabList.length, vsync: this);
     _tabcontroller.addListener(() {
       _currentTabIndex = _tabcontroller.index;
-      print('NewIndex: $_currentTabIndex');
     });
 
-    // 初始化快捷键
-    hotKeyManager.unregisterAll();
-    
     // 请求权限
     clipboardManager.isAccessAllowed().then((value) => {
         if (!value) {
           clipboardManager.requestAccess().then((value) => {
-              hotKeyManager.register(
-                kShortcutSimulateCtrlT,
-                keyDownHandler: (_) async {
-                  print('Simulate Ctrl T KeyPress');
-                  // await simulateCtrlC();
-                  await clipboardManager.simulateCtrlC();
-                },
-              )
+              scheduleMicrotask(() async {
+                await hotKeyManager.registerAllHotKey();
+              })
+          })
+        } else {
+          scheduleMicrotask(() async {
+            await hotKeyManager.registerAllHotKey();
           })
         }
     });

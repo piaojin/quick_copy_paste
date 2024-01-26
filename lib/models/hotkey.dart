@@ -47,3 +47,13 @@ class HotKeyItem {
     return HotKeyItem(isEnable, false, title, type, hotKey);
   }
 }
+
+extension HotKeyExtension on HotKey {
+  bool isTheSame(HotKey key) {
+    if (modifiers?.length == key.modifiers?.length) {
+        modifiers?.sort((a, b) => a.index.compareTo(b.index));
+        key.modifiers?.sort((a, b) => a.index.compareTo(b.index));
+    }
+    return keyCode == key.keyCode;
+  }
+}
