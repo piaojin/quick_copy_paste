@@ -7,6 +7,7 @@ class HotKeyItemWidget extends StatefulWidget {
       {Key? key,
       required this.index,
       this.didSelectClosure,
+      this.didUpdateStateClosure,
       required this.item})
       : super(key: key);
 
@@ -22,6 +23,7 @@ class HotKeyItemWidget extends StatefulWidget {
   final int index;
   final HotKeyItem item;
   final Function(int)? didSelectClosure;
+  final Function(int, bool)? didUpdateStateClosure;
 
   @override
   State<HotKeyItemWidget> createState() => _HotKeyItemWidgetState();
@@ -43,11 +45,13 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
 
   void handleCheckBoxAction(bool value) {
     widget.item.isEnable = value;
+    if (widget.didUpdateStateClosure != null) {
+      widget.didUpdateStateClosure!(widget.index, value);
+    }
     setState(() {});
   }
 
   void handleTapAction() {
-    // widget.item.isSelect = !widget.item.isSelect;
     if (widget.didSelectClosure != null) {
       widget.didSelectClosure!(widget.index);
     }
@@ -71,7 +75,7 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
           decoration: BoxDecoration(
             border: Border.fromBorderSide( 
               BorderSide(
-                width: 3, color: Colors.green, style: widget.item.isSelect ? BorderStyle.solid : BorderStyle.none)
+                width: 3, color: widget.item.getUIInfo().$1, style: widget.item.isSelect ? BorderStyle.solid : BorderStyle.none)
             ),
           ),
           child: Center(
@@ -98,7 +102,7 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
                 ),
                 Container(
                   padding: const EdgeInsets.only(top: 10),
-                  child: const Divider(height: 1.0, color: Colors.green),
+                  child: Divider(height: 1.0, color: widget.item.getUIInfo().$1),
                 ),
               ],
             ),
@@ -106,7 +110,6 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
         ),
       ),
       onTap: () {
-        print('row ${widget.index}');
         handleTapAction();
       },
     );

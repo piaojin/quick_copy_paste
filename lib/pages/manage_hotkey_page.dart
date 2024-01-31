@@ -1,20 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:pasteboard/pasteboard.dart';
-import 'package:quick_copy_paste/common/pj_const.dart';
-import 'package:quick_copy_paste/models/clipboard_item.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
-import 'package:quick_copy_paste/tools/clipboard_manager.dart';
-import 'package:quick_copy_paste/tools/eventbus_manager.dart';
-import '../tools/copy_paste_event.dart';
 import '../tools/hotkey_item_manager.dart';
+import '../tools/pj_hotkey_manager.dart';
 import '../widgets/hotkey_item_widget.dart';
-import '../tools/store_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 
 class ManageHotKeyPage extends StatefulWidget {
@@ -38,7 +30,6 @@ class ManageHotKeyPage extends StatefulWidget {
 class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepAliveClientMixin {
   final List<HotKeyItem> _items = [];
   int? _selectIndex;
-  HotKey? _hotKey;
 
   @override
   void initState() {
@@ -68,6 +59,9 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
         didSelectClosure: (i) {
           handleSelectAction(i);
         },
+        didUpdateStateClosure: (i, isEnable){
+          handleUpdateHotKeyState(i, isEnable);
+        },
         item: item);
   }
 
@@ -89,43 +83,35 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     }
   }
 
+  void handleUpdateHotKeyState(int index, bool isEnable) {
+      _items[index].isEnable = isEnable;
+      var item = _items[index];
+      var hotKey = item.hotKey;
+      if (hotKey != null) {
+        if (isEnable) {
+          pjHotKeyManager.register(item);
+        } else {
+          pjHotKeyManager.unregister(hotKey);
+        }
+      }
+  }
+
   Future<void> handleRecordHotKeyAction(HotKey newHotKey) async {
     if (_selectIndex != null) {
       var item = _items[_selectIndex ?? 0];
       var oldHotKey = item.hotKey;
       if (oldHotKey != null) {
-        hotKeyManager.unregister(oldHotKey);
+        await pjHotKeyManager.unregister(oldHotKey);
       }
       item.hotKey = newHotKey;
       setState(() {});
 
-      hotKeyManager.unregister(newHotKey);
-
-      hotKeyManager.register(newHotKey, keyDownHandler: (hotKey) async {
-        print("触发快捷键: $hotKey");
-         BotToast.showText(text: "触发快捷键: $hotKey");
-         if (item.hotKey?.isTheSame(hotKey) == true) {
-          switch (item.type) {
-            case HotKeyType.copy:
-              await clipboardManager.simulateCtrlC(() {
-                Future.delayed(const Duration(milliseconds: 500), () async {
-                  String? text = await Pasteboard.text;
-                  text ??= "";
-                  if (text.isNotEmpty) {
-                      eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.copy, ClipboardItem(text)));
-                  } 
-                });
-              });
-              break;
-            case HotKeyType.paste:
-              eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.paste, null));
-              break;
-          }
-         }
-      });
+      if (item.isEnable) {
+        await pjHotKeyManager.unregister(newHotKey);
+        await pjHotKeyManager.register(item);
+      }
 
       await hotKeyItemManager.saveHotKeyItem(item);
-      print("录制了快捷键: $newHotKey, ${json.encode(item.toJson())}");
       BotToast.showText(text: "录制了快捷键: $newHotKey");
     }
   }

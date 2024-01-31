@@ -1,16 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:bot_toast/bot_toast.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:pasteboard/pasteboard.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
-import 'package:quick_copy_paste/tools/clipboard_manager.dart';
-import 'package:quick_copy_paste/tools/copy_paste_event.dart';
-import 'package:quick_copy_paste/tools/eventbus_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/clipboard_item.dart';
 
 class HotKeyItemCacheManager {
   SharedPreferences? sharedPreferences;
@@ -127,40 +120,6 @@ class HotKeyItemCacheManager {
       }
     }
     return list;
-  }
-}
-
-extension RegisterHotKey on HotKeyManager {
-  Future<void> registerAllHotKey() async {
-    // 初始化快捷键
-    await hotKeyManager.unregisterAll();
-    var items = await hotKeyItemManager.getAllHotKeyItems();
-    for (var item in items) {
-      var hotKey = item.hotKey;
-      if (hotKey != null) {
-        await hotKeyManager.register(hotKey, keyDownHandler: (hotKey) async {
-            BotToast.showText(text: "触发快捷键: $hotKey");
-            if (item.hotKey?.isTheSame(hotKey) == true) {
-              switch (item.type) {
-                case HotKeyType.copy:
-                  await clipboardManager.simulateCtrlC(() {
-                    Future.delayed(const Duration(milliseconds: 500), () async {
-                      String? text = await Pasteboard.text;
-                      text ??= "";
-                      if (text.isNotEmpty) {
-                          eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.copy, ClipboardItem(text)));
-                      } 
-                    });
-                  });
-                  break;
-                case HotKeyType.paste:
-                  eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.paste, null));
-                  break;
-              }
-            }
-        });
-      }
-    }
   }
 }
 

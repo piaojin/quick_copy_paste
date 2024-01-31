@@ -1,8 +1,7 @@
-import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:quick_copy_paste/common/pj_const.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 enum HotKeyType {
   copy, paste
@@ -45,6 +44,10 @@ class HotKeyItem {
     var hotKey = HotKey.fromJson(json['hotKey']);
     HotKeyType type = HotKeyType.values[json['type']];
     return HotKeyItem(isEnable, false, title, type, hotKey);
+  }
+
+  (Color stateColor,) getUIInfo() {
+    return (isEnable ? const Color.fromARGB(255, 19, 132, 19) : const Color.fromARGB(255, 119, 121, 119),);
   }
 }
 

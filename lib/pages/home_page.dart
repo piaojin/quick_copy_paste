@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
-import '../tools/hotkey_item_manager.dart';
+import '../tools/pj_hotkey_manager.dart';
 import 'clipboard_record_page.dart';
 import 'manage_hotkey_page.dart';
 import 'package:quick_copy_paste/tools/clipboard_manager.dart';
@@ -57,12 +57,12 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         if (!value) {
           clipboardManager.requestAccess().then((value) => {
               scheduleMicrotask(() async {
-                await hotKeyManager.registerAllHotKey();
+                await pjHotKeyManager.registerAllHotKey();
               })
           })
         } else {
           scheduleMicrotask(() async {
-            await hotKeyManager.registerAllHotKey();
+            await pjHotKeyManager.registerAllHotKey();
           })
         }
     });

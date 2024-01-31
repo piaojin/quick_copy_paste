@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:async';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:keypress_simulator/keypress_simulator.dart';
 import 'package:flutter/services.dart';
