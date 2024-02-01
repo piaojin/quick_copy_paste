@@ -32,6 +32,7 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
   final List<ClipboardItem> _items = [];
   late StreamSubscription copyPasteSubscription;
   late var scrollController = ScrollController();
+  late var emptyWidget = const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.center, children: [Icon(Icons.copy_sharp), Text("暂无数据")],),);
 
   @override
   bool get wantKeepAlive => true;
@@ -99,13 +100,13 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      body: ListView.builder(
+      body: _items.isNotEmpty ? ListView.builder(
         itemCount: _items.length,
         itemBuilder: (BuildContext context, int position) {
           return createRow(position);
         },
         controller: scrollController,
-      ),
+      ) : emptyWidget,
        // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
