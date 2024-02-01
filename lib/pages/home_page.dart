@@ -35,6 +35,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   late TabController _tabcontroller;
+  late var manageHotKeyPage = ManageHotKeyPage(title: "热键管理");
+  late var clipboardRecordPage = const ClipboardRecordPage(title: "记录管理");
   int _currentTabIndex = 0;
 
   static const List<Tab> _homeTabList = <Tab>[
@@ -48,6 +50,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     _tabcontroller = TabController(length: _homeTabList.length, vsync: this);
     _tabcontroller.addListener(() {
       _currentTabIndex = _tabcontroller.index;
+      manageHotKeyPage.setVisible(_currentTabIndex == manageHotKeyPage.index);
     });
 
     // 请求权限
@@ -95,9 +98,9 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       ),
       body: TabBarView(
         controller: _tabcontroller,
-        children: const [
-          ClipboardRecordPage(title: "记录管理"),
-          ManageHotKeyPage(title: "热键管理"),
+        children: [
+          clipboardRecordPage,
+          manageHotKeyPage,
         ],
       ),
        // This trailing comma makes auto-formatting nicer for build methods.

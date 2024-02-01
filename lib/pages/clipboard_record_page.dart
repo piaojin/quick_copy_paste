@@ -22,6 +22,7 @@ class ClipboardRecordPage extends StatefulWidget {
   // always marked "final".
 
   final String title;
+  final int index = 0;
 
   @override
   State<ClipboardRecordPage> createState() => _ClipboardRecordPageState();
@@ -59,7 +60,9 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
             _items.add(item);
             setState(() {
               Future.delayed(const Duration(milliseconds: 500), () async {
-              scrollController.animateTo(scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.bounceIn);  
+                if (_items.isNotEmpty && scrollController.hasClients) {
+                  scrollController.animateTo(scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.bounceIn);
+                } 
             });
             });
           String text = item.text ?? "";

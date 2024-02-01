@@ -11,6 +11,7 @@ import 'hotkey_item_manager.dart';
 
 class PJHotKeyManager {
   PJHotKeyManager._();
+
   /// The shared instance of [PJHotKeyManager].
   static final PJHotKeyManager instance = PJHotKeyManager._();
 
@@ -25,8 +26,8 @@ class PJHotKeyManager {
   }) async {
     var hotKey = hotKeyItem.hotKey;
     if (hotKeyItem.isEnable && hotKey != null) {
-      hotKeyManager.register(hotKey, keyDownHandler:(triggerHotKey) async {
-        BotToast.showText(text: "触发快捷键: $hotKey");
+      hotKeyManager.register(hotKey,
+          keyDownHandler: (triggerHotKey) async {
             if (hotKey.isTheSame(triggerHotKey) == true) {
               switch (hotKeyItem.type) {
                 case HotKeyType.copy:
@@ -35,21 +36,23 @@ class PJHotKeyManager {
                       String? text = await Pasteboard.text;
                       text ??= "";
                       if (text.isNotEmpty) {
-                          eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.copy, ClipboardItem(text)));
-                      } 
+                        eventBusManager.eventBus.fire(CopyPasteEvent(
+                            HotKeyType.copy, ClipboardItem(text)));
+                      }
                     });
                   });
                   break;
                 case HotKeyType.paste:
-                  eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.paste, null));
+                  eventBusManager.eventBus
+                      .fire(CopyPasteEvent(HotKeyType.paste, null));
                   break;
               }
             }
-      }, keyUpHandler:(triggerHotKey) => {
-        if (keyUpHandler != null) {
-          keyUpHandler(triggerHotKey)
-        }
-      });
+            BotToast.showText(text: "触发快捷键: $hotKey");
+          },
+          keyUpHandler: (triggerHotKey) => {
+            if (keyUpHandler != null) {keyUpHandler(triggerHotKey)}
+          });
     }
   }
 
@@ -58,7 +61,7 @@ class PJHotKeyManager {
     await unregisterAll();
     var items = await hotKeyItemManager.getAllHotKeyItems();
     for (var item in items) {
-       await register(item);
+      await register(item);
     }
   }
 

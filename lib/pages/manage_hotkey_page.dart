@@ -10,7 +10,7 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 
 
 class ManageHotKeyPage extends StatefulWidget {
-  const ManageHotKeyPage({Key? key, required this.title}) : super(key: key);
+  ManageHotKeyPage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -22,9 +22,19 @@ class ManageHotKeyPage extends StatefulWidget {
   // always marked "final".
 
   final String title;
+  var _isVisible = false;
+  final int index = 1;
 
   @override
   State<ManageHotKeyPage> createState() => _ManageHotKeyPageState();
+
+  void setVisible(bool isVisible) {
+    _isVisible = isVisible;
+  }
+
+  bool getVisible() {
+    return _isVisible;
+  }
 }
 
 class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepAliveClientMixin {
@@ -110,6 +120,10 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
   }
 
   Future<void> handleRecordHotKeyAction(HotKey newHotKey) async {
+    if (!widget.getVisible()) {
+      return;
+    }
+
     if (_selectIndex != null) {
       var item = _items[_selectIndex ?? 0];
       var oldHotKey = item.hotKey;
