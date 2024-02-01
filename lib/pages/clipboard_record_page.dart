@@ -31,6 +31,7 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
 
   final List<ClipboardItem> _items = [];
   late StreamSubscription copyPasteSubscription;
+  late var scrollController = ScrollController();
 
   @override
   bool get wantKeepAlive => true;
@@ -55,7 +56,11 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
           var item = event.item;
           if (item != null) {
             _items.add(item);
-            setState(() {});
+            setState(() {
+              Future.delayed(const Duration(milliseconds: 500), () async {
+              scrollController.animateTo(scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.bounceIn);  
+            });
+            });
           String text = item.text ?? "";
           BotToast.showText(text: "收到event bus: $text");
         }
@@ -99,6 +104,7 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
         itemBuilder: (BuildContext context, int position) {
           return createRow(position);
         },
+        controller: scrollController,
       ),
        // This trailing comma makes auto-formatting nicer for build methods.
     );

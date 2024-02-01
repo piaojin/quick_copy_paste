@@ -1,4 +1,3 @@
-
 import 'package:bot_toast/bot_toast.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pasteboard/pasteboard.dart';

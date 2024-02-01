@@ -1,9 +1,26 @@
+
 import 'package:flutter/material.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:window_manager/window_manager.dart';
 import './pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(300, 350),
+    center: false,
+    minimumSize: Size(300, 350),
+    skipTaskbar: false,
+    title: "快复制",
+    titleBarStyle: TitleBarStyle.normal,
+  );
+  
+ await windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
   runApp(const MyApp());
 }
 
@@ -14,7 +31,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '快复制',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -27,9 +44,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const Scaffold(
-        body: MyHomePage(title: 'Flutter Demo Home Page'),
-      ),
+      home: const MyHomePage(),
       builder: BotToastInit(),
     );
   }

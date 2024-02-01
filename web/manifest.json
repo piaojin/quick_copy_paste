@@ -1,6 +1,6 @@
 {
-    "name": "quick_copy_paste",
-    "short_name": "quick_copy_paste",
+    "name": "快复制",
+    "short_name": "快复制",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

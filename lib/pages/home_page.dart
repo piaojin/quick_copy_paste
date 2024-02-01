@@ -18,7 +18,7 @@ final kShortcutSimulateCtrlT = HotKey(
 
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({Key? key}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -29,8 +29,6 @@ class MyHomePage extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
 
-  final String title;
-
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -40,8 +38,8 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   int _currentTabIndex = 0;
 
   static const List<Tab> _homeTabList = <Tab>[
-    Tab(text: "记录管理", icon: Icon(Icons.music_note),),
-    Tab(text: "热键管理", icon: Icon(Icons.music_note),),
+    Tab(text: "记录管理", icon: Icon(Icons.copy),),
+    Tab(text: "热键管理", icon: Icon(Icons.keyboard),),
   ];
 
   @override
@@ -86,14 +84,20 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-        bottom: TabBar(tabs: _homeTabList, controller: _tabcontroller),
+        title: null,
+        toolbarHeight: 0,
+        bottom: TabBar(
+          tabs: _homeTabList, 
+          controller: _tabcontroller,
+          labelColor: const Color.fromARGB(255, 30, 144, 255),
+          indicatorColor: const Color.fromARGB(255, 30, 144, 255),
+          ),
       ),
       body: TabBarView(
         controller: _tabcontroller,
         children: const [
           ClipboardRecordPage(title: "记录管理"),
-          ManageHotKeyPage(title: "记录管理"),
+          ManageHotKeyPage(title: "热键管理"),
         ],
       ),
        // This trailing comma makes auto-formatting nicer for build methods.

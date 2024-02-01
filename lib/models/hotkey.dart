@@ -47,7 +47,7 @@ class HotKeyItem {
   }
 
   (Color stateColor,) getUIInfo() {
-    return (isEnable ? const Color.fromARGB(255, 19, 132, 19) : const Color.fromARGB(255, 119, 121, 119),);
+    return (isEnable ? const Color.fromARGB(255, 30, 144, 255) : const Color.fromARGB(255, 128, 128, 128),);
   }
 }
 

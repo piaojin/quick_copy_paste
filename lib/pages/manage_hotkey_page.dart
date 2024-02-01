@@ -62,6 +62,9 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
         didUpdateStateClosure: (i, isEnable){
           handleUpdateHotKeyState(i, isEnable);
         },
+        didRemoveHotKeyClosure: (i) {
+          handleRemoveHotKeyAction(i);
+        },
         item: item);
   }
 
@@ -93,6 +96,16 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
         } else {
           pjHotKeyManager.unregister(hotKey);
         }
+      }
+  }
+
+  void handleRemoveHotKeyAction(int index) async {
+      var item = _items[index];
+      var hotKey = item.hotKey;
+      if (hotKey != null) {
+        await pjHotKeyManager.unregister(hotKey);
+        await hotKeyItemManager.removeHotKeyItemBy(item);
+        item.hotKey = null;
       }
   }
 

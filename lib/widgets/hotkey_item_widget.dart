@@ -8,6 +8,7 @@ class HotKeyItemWidget extends StatefulWidget {
       required this.index,
       this.didSelectClosure,
       this.didUpdateStateClosure,
+      this.didRemoveHotKeyClosure,
       required this.item})
       : super(key: key);
 
@@ -24,6 +25,7 @@ class HotKeyItemWidget extends StatefulWidget {
   final HotKeyItem item;
   final Function(int)? didSelectClosure;
   final Function(int, bool)? didUpdateStateClosure;
+  final Function(int)? didRemoveHotKeyClosure;
 
   @override
   State<HotKeyItemWidget> createState() => _HotKeyItemWidgetState();
@@ -58,6 +60,13 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
     setState(() {});
   }
 
+  void handleRemoveHotKeyAction() {
+    if (widget.didRemoveHotKeyClosure != null) {
+      widget.didRemoveHotKeyClosure!(widget.index);
+    }
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -67,16 +76,18 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     // widget.didSelectClosure
-    
+
     return GestureDetector(
       child: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Container(
           decoration: BoxDecoration(
-            border: Border.fromBorderSide( 
-              BorderSide(
-                width: 3, color: widget.item.getUIInfo().$1, style: widget.item.isSelect ? BorderStyle.solid : BorderStyle.none)
-            ),
+            border: Border.fromBorderSide(BorderSide(
+                width: 3,
+                color: widget.item.getUIInfo().$1,
+                style: widget.item.isSelect
+                    ? BorderStyle.solid
+                    : BorderStyle.none)),
           ),
           child: Center(
             child: Column(
@@ -85,6 +96,7 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
                   children: [
                     Checkbox(
                       value: widget.item.isEnable,
+                      activeColor: const Color.fromARGB(255, 30, 144, 255),
                       onChanged: (bool? value) {
                         handleCheckBoxAction(value ?? false);
                       },
@@ -93,16 +105,37 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
                     Expanded(
                       child: Container(),
                     ),
-                    Offstage(
-                      offstage: widget.item.hotKey == null,
-                      child: HotKeyVirtualView(
-                          hotKey: widget.item.hotKey ?? _hotKey),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, right: 2),
+                      child: Offstage(
+                        offstage: widget.item.hotKey == null,
+                        child: HotKeyVirtualView(
+                            hotKey: widget.item.hotKey ?? _hotKey),
+                      ),
                     ),
+                    Padding(
+                        padding: const EdgeInsets.only(top: 8, right: 2),
+                        child: Offstage(
+                          offstage: widget.item.hotKey == null ||
+                              widget.item.isSelect == false,
+                          child: SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: IconButton(
+                                onPressed: () {
+                                  handleRemoveHotKeyAction();
+                                },
+                                splashRadius: 20.0,
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.clear_sharp)),
+                          ),
+                        )),
                   ],
                 ),
                 Container(
                   padding: const EdgeInsets.only(top: 10),
-                  child: Divider(height: 1.0, color: widget.item.getUIInfo().$1),
+                  child:
+                      Divider(height: 1.0, color: widget.item.getUIInfo().$1),
                 ),
               ],
             ),

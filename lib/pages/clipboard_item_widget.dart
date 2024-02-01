@@ -39,19 +39,39 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     // widget.didSelectClosure
-
+    var i = widget.item.index + 1;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(10.0),
-        child: Row(
-        children: [
-          Text("${widget.item.index}"),
-          Padding(
-            padding: const EdgeInsets.only(left: 20),
-            child: Text("${widget.item.text}"),
-          ),
-        ],
-      ),
+        child: Column(
+          children: [
+            Row(children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 20),
+                child: Text(
+                  "$i",
+                  style: const TextStyle(
+                    color: Color.fromARGB(255, 30, 144, 255),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              Expanded(
+                  child: Text(
+                "${widget.item.text}",
+                maxLines: 6,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.black),
+              ))
+            ]),
+            Container(
+              padding: const EdgeInsets.only(top: 10),
+              child: const Divider(
+                  height: 1.0, color: Color.fromARGB(255, 220, 220, 220)),
+            )
+          ],
+        ),
       ),
     );
   }
