@@ -3,7 +3,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:quick_copy_paste/models/clipboard_item.dart';
-import 'package:quick_copy_paste/pages/clipboard_item_widget.dart';
+import 'package:quick_copy_paste/widgets/clipboard_item_widget.dart';
 import '../models/hotkey.dart';
 import '../tools/clipboard_manager.dart';
 import '../tools/copy_paste_event.dart';
@@ -87,10 +87,17 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
       }
   }
 
+  void handleRemoveItemAction(ClipboardItem item) {
+    _items.remove(item);
+    setState(() {});
+  }
+
   Widget createRow(int i) {
     var item = _items[i];
     item.index = i;
-    return ClipboardItemWidget(item: item);
+    return ClipboardItemWidget(item: item, didTapRemoveClosure: (removeItem) {
+      handleRemoveItemAction(removeItem);
+    });
   }
 
   @override
@@ -103,6 +110,7 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 251, 251, 251),
       body: _items.isNotEmpty ? ListView.builder(
         itemCount: _items.length,
         itemBuilder: (BuildContext context, int position) {

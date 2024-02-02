@@ -153,7 +153,8 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-        body: Stack(
+      backgroundColor: const Color.fromARGB(255, 251, 251, 251),
+      body: Stack(
       children: [
         Positioned(
           child: Offstage(

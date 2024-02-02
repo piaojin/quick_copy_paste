@@ -89,6 +89,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         // the App.build method, and use it to set our appbar title.
         title: null,
         toolbarHeight: 0,
+        backgroundColor: const Color.fromARGB(255, 251, 251, 251),
         bottom: TabBar(
           tabs: _homeTabList, 
           controller: _tabcontroller,

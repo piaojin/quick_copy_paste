@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quick_copy_paste/models/clipboard_item.dart';
 
 class ClipboardItemWidget extends StatefulWidget {
-  const ClipboardItemWidget({Key? key, required this.item}) : super(key: key);
+  const ClipboardItemWidget({Key? key, required this.item, this.didTapRemoveClosure}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -14,12 +14,14 @@ class ClipboardItemWidget extends StatefulWidget {
   // always marked "final".
 
   final ClipboardItem item;
+  final Function(ClipboardItem)? didTapRemoveClosure;
 
   @override
   State<ClipboardItemWidget> createState() => _ClipboardItemWidgetState();
 }
 
 class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
+  var isMouseEnter = false;
   @override
   void initState() {
     super.initState();
@@ -40,9 +42,21 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
     // than having to individually change instances of widgets.
     // widget.didSelectClosure
     var i = widget.item.index + 1;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
+    return MouseRegion(
+                onEnter: (_) {
+                  isMouseEnter = true;
+                  setState(() {});
+                },
+                onExit: (_) {
+                  isMouseEnter = false;
+                  setState(() {});
+                },
+                onHover: (_) => {},
+                child: Center(
+      child: Container(
+        color: isMouseEnter ? const Color.fromARGB(255, 224, 224, 224) : i % 2 == 0 ? const Color.fromARGB(255, 242, 242, 242) : const Color.fromARGB(255, 251, 251, 251),
+        child: Padding(
+        padding: const EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0, bottom: 5.0),
         child: Column(
           children: [
             Row(children: [
@@ -63,16 +77,32 @@ class _ClipboardItemWidgetState extends State<ClipboardItemWidget> {
                 maxLines: 6,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.black),
-              ))
-            ]),
-            Container(
-              padding: const EdgeInsets.only(top: 10),
-              child: const Divider(
-                  height: 1.0, color: Color.fromARGB(255, 220, 220, 220)),
-            )
+              )),
+
+              Padding(
+                padding: const EdgeInsets.only(right: 2),
+                child: Offstage(
+                        offstage: !isMouseEnter,
+                        child: SizedBox(
+                          width: 30,
+                          height: 30,
+                          child: IconButton(
+                              onPressed: () {
+                                if (widget.didTapRemoveClosure != null) {
+                                  widget.didTapRemoveClosure!(widget.item);
+                                }
+                              },
+                              splashRadius: 20.0,
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.remove_circle_outlined, color: Colors.red)),
+                        ),
+                      ))
+            ])
           ],
         ),
       ),
-    );
+      )
+    ),
+              );
   }
 }
