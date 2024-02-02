@@ -7,13 +7,13 @@ import '../models/hotkey.dart';
 import 'clipboard_manager.dart';
 import 'copy_paste_event.dart';
 import 'eventbus_manager.dart';
-import 'hotkey_item_manager.dart';
+import 'hotkey_cache_manager.dart';
 
-class PJHotKeyManager {
-  PJHotKeyManager._();
+class PJHotKeyCacheManager {
+  PJHotKeyCacheManager._();
 
-  /// The shared instance of [PJHotKeyManager].
-  static final PJHotKeyManager instance = PJHotKeyManager._();
+  /// The shared instance of [PJHotKeyCacheManager].
+  static final PJHotKeyCacheManager instance = PJHotKeyCacheManager._();
 
   Future<void> unregister(HotKey hotKey) async {
     return await hotKeyManager.unregister(hotKey);
@@ -59,7 +59,7 @@ class PJHotKeyManager {
   Future<void> registerAllHotKey() async {
     // 初始化快捷键
     await unregisterAll();
-    var items = await hotKeyItemManager.getAllHotKeyItems();
+    var items = await hotKeyCacheManager.getAllHotKeyItems();
     for (var item in items) {
       await register(item);
     }
@@ -68,6 +68,26 @@ class PJHotKeyManager {
   Future<void> unregisterAll() async {
     return await hotKeyManager.unregisterAll();
   }
+
+  Future<bool> isDuplicateHotKey(HotKey hotKey) async {
+    var list = await hotKeyCacheManager.getAllHotKeyItems();
+    for (var item in list) {
+      if (item.hotKey?.isTheSame(hotKey) == true) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool isConflictWithSystemHotKey(HotKey hotKey) {
+    var keyCodeIndex = hotKey.keyCode.index;
+    var isCharacter = keyCodeIndex >= KeyCode.keyC.index && keyCodeIndex <= KeyCode.keyZ.index;
+    var modifiers = hotKey.modifiers;
+    if (modifiers != null && modifiers.length == 1 && modifiers.first == KeyModifier.meta && isCharacter) {
+      return true;
+    }
+    return false;
+  }
 }
 
-final pjHotKeyManager = PJHotKeyManager.instance;
+final pjHotKeyManager = PJHotKeyCacheManager.instance;

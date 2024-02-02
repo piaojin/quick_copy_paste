@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
-import '../tools/hotkey_item_manager.dart';
+import '../tools/hotkey_cache_manager.dart';
 import '../tools/pj_hotkey_manager.dart';
 import '../widgets/hotkey_item_widget.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -24,12 +24,16 @@ class ManageHotKeyPage extends StatefulWidget {
   final String title;
   var _isVisible = false;
   final int index = 1;
+  Function(bool)? didChangeVisibleClosure;
 
   @override
   State<ManageHotKeyPage> createState() => _ManageHotKeyPageState();
 
   void setVisible(bool isVisible) {
     _isVisible = isVisible;
+    if (didChangeVisibleClosure != null) {
+      didChangeVisibleClosure!(isVisible);
+    }
   }
 
   bool getVisible() {
@@ -37,29 +41,61 @@ class ManageHotKeyPage extends StatefulWidget {
   }
 }
 
-class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepAliveClientMixin {
+class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   final List<HotKeyItem> _items = [];
   int? _selectIndex;
+  bool _isInEditMode = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     scheduleMicrotask(() async {
       _items.addAll(await getItems());
       setState(() {});
     });
+
+    widget.didChangeVisibleClosure = (isVisible) {
+      if (!isVisible) {
+        deselectItem();
+      }
+    };
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.inactive) {
+      deselectItem();
+    }
   }
 
   Future<List<HotKeyItem>> getItems() async {
     List<HotKeyItem> items = [];
-    var copyItem = await hotKeyItemManager.getHotKeyItem(HotKeyType.copy);
-    copyItem ??= hotKeyItemManager.createKeyItem(HotKeyType.copy);
+    var copyItem = await hotKeyCacheManager.getHotKeyItem(HotKeyType.copy);
+    copyItem ??= hotKeyCacheManager.createKeyItem(HotKeyType.copy);
     items.add(copyItem);
 
-    var pasteItem = await hotKeyItemManager.getHotKeyItem(HotKeyType.paste);
-    pasteItem ??= hotKeyItemManager.createKeyItem(HotKeyType.paste);
+    var pasteItem = await hotKeyCacheManager.getHotKeyItem(HotKeyType.paste);
+    pasteItem ??= hotKeyCacheManager.createKeyItem(HotKeyType.paste);
     items.add(pasteItem);
     return items;
+  }
+
+  void setIsInEditMode(bool isInEditMode) {
+    _isInEditMode = isInEditMode;
+    scheduleMicrotask(() async {
+      if (isInEditMode) {
+        pjHotKeyManager.unregisterAll();
+      } else {
+        pjHotKeyManager.registerAllHotKey();
+      }
+    });
   }
 
   Widget createRow(int i) {
@@ -79,19 +115,30 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
   }
 
   void handleSelectAction(int index) {
+    if (_selectIndex == index) {
+      deselectItem();
+      return;
+    }
+
     if (_selectIndex != null) {
       _items[_selectIndex ?? index].isSelect = false;
     }
 
     _items[index].isSelect = true;
     _selectIndex = index;
+    setIsInEditMode(true);
     setState(() {});
   }
 
   void handleDeselectAction() {
+    deselectItem();
+  }
+
+  void deselectItem() {
     if (_selectIndex != null) {
       _items[_selectIndex ?? 0].isSelect = false;
       _selectIndex = null;
+      setIsInEditMode(false);
       setState(() {});
     }
   }
@@ -114,7 +161,7 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
       var hotKey = item.hotKey;
       if (hotKey != null) {
         await pjHotKeyManager.unregister(hotKey);
-        await hotKeyItemManager.removeHotKeyItemBy(item);
+        await hotKeyCacheManager.removeHotKeyItemBy(item);
         item.hotKey = null;
       }
   }
@@ -124,9 +171,24 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
       return;
     }
 
+    if (pjHotKeyManager.isConflictWithSystemHotKey(newHotKey)) {
+      BotToast.showText(text: "热键$newHotKey与系统热键冲突，请更换其他热键！");
+      return;
+    }
+
     if (_selectIndex != null) {
       var item = _items[_selectIndex ?? 0];
       var oldHotKey = item.hotKey;
+
+      if(oldHotKey != null && oldHotKey.isTheSame(newHotKey)) {
+        return;
+      }
+
+      if ((oldHotKey?.isTheSame(newHotKey) == false || oldHotKey == null) && await pjHotKeyManager.isDuplicateHotKey(newHotKey)) {
+        BotToast.showText(text: "热键$newHotKey已被设置");
+        return;
+      }
+
       if (oldHotKey != null) {
         await pjHotKeyManager.unregister(oldHotKey);
       }
@@ -134,11 +196,11 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
       setState(() {});
 
       if (item.isEnable) {
-        await pjHotKeyManager.unregister(newHotKey);
         await pjHotKeyManager.register(item);
       }
 
-      await hotKeyItemManager.saveHotKeyItem(item);
+      await hotKeyCacheManager.saveHotKeyItem(item);
+      deselectItem();
       BotToast.showText(text: "录制了快捷键: $newHotKey");
     }
   }

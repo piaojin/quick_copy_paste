@@ -123,4 +123,4 @@ class HotKeyItemCacheManager {
   }
 }
 
-final hotKeyItemManager = HotKeyItemCacheManager.instance;
+final hotKeyCacheManager = HotKeyItemCacheManager.instance;
