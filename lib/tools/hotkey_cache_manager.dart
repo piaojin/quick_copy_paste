@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:quick_copy_paste/models/hotkey.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 
 class HotKeyItemCacheManager {
   SharedPreferences? sharedPreferences;
@@ -11,7 +12,9 @@ class HotKeyItemCacheManager {
   /// The shared instance of [HotKeyItemCacheManager].
   static final HotKeyItemCacheManager instance = HotKeyItemCacheManager._();
 
-  static const String _allHotKeyItemKeys = "AllHotKeyItemKeys";
+  final String _allHotKeyCacheKeys = "AllHotKeyCacheKeys";
+  final String _copyKey = "copyHotKey";
+  final String _pasteKey = "pasteHotKey";
 
   HotKeyItemCacheManager._() {
     setUpData();
@@ -27,18 +30,61 @@ class HotKeyItemCacheManager {
     return sharedPreferences ??= await SharedPreferences.getInstance();
   }
 
-  Future<void> saveHotKeyItem(HotKeyItem hotKeyItem) async {
+  bool isCopyKey(String cacheKey) {
+    return cacheKey == _copyKey;
+  }
+
+  bool isPasteKey(String cacheKey) {
+    return cacheKey == _pasteKey;
+  }
+
+  String? getCacheKey(HotKeyItem hotKeyItem) {
     var hotKey = hotKeyItem.hotKey;
-    if (hotKey != null) {
-      await (await getSharedPreferences()).setString(hotKeyItem.type.getKeyInfo().$1, json.encode(hotKeyItem.toJson()));
-      await saveHotKeyItemKey(hotKeyItem.type);
-      await saveHotKeyType(hotKeyItem.type);
+    var customHotKey = hotKeyItem.customHotKey;
+    String? cacheKey;
+    if ((hotKey != null && hotKeyItem.type != HotKeyType.custom) ||
+        customHotKey != null) {
+      switch (hotKeyItem.type) {
+        case HotKeyType.copy:
+          cacheKey = _copyKey;
+          break;
+        case HotKeyType.paste:
+          cacheKey = _pasteKey;
+          break;
+        case HotKeyType.custom:
+          if (customHotKey != null) {
+            cacheKey = "customHotKey_";
+            cacheKey += "${customHotKey.keyCode.index}";
+            customHotKey.modifiers?.forEach((element) {
+              cacheKey = "${cacheKey}_${element.index}";
+            });
+          }
+          break;
+      }
+    }
+    return cacheKey;
+  }
+
+  HotKeyItem createKeyItem(HotKeyType type) {
+    return HotKeyItem(true, false, type.getKeyInfo().$2, type);
+  }
+
+  Future<void> saveHotKeyItem(HotKeyItem hotKeyItem) async {
+    var cacheKey = getCacheKey(hotKeyItem);
+    if (cacheKey != null) {
+      await (await getSharedPreferences())
+          .setString(cacheKey, json.encode(hotKeyItem.toJson()));
+      await saveCacheKey(cacheKey);
     }
   }
 
-  Future<HotKeyItem?> getHotKeyItem(HotKeyType type) async {
-    String? cacheKeyJosn = (await getSharedPreferences()).getString(type.getKeyInfo().$1);
-    print("cacheKeyJosn: $cacheKeyJosn");
+  Future<void> updateHotKeyItem(HotKeyItem hotKeyItem) async {
+    return await saveHotKeyItem(hotKeyItem);
+  }
+
+  Future<HotKeyItem?> getHotKeyItem(String cacheKey) async {
+    String? cacheKeyJosn = (await getSharedPreferences()).getString(cacheKey);
+    debugPrint("cacheKeyJosn: $cacheKeyJosn");
     if (cacheKeyJosn == null) {
       return null;
     }
@@ -47,79 +93,128 @@ class HotKeyItemCacheManager {
     try {
       var jsonMap = json.decode(cacheKeyJosn);
       keyItem = HotKeyItem.fromJson(jsonMap);
-    } catch(e) {
-      await removeHotKeyItem(type);
-      await removeHotKeyType(type);
-      await removeHotKeyItemKey(type);
-      print("catch error: $e");
+    } catch (e) {
+      await removeHotKeyItemByCacheKey(cacheKey);
+      debugPrint("catch error: $e");
     }
 
     return keyItem;
   }
 
-  HotKeyItem createKeyItem(HotKeyType type) {
-    return HotKeyItem(true, false, type.getKeyInfo().$2, type, null);
+  Future<HotKeyItem?> getCopyHotKeyItem() async {
+    return await getHotKeyItem(_copyKey);
   }
 
-  Future<void> removeHotKeyItem(HotKeyType type) async {
-    (await getSharedPreferences()).remove(type.getKeyInfo().$1);
+  Future<HotKeyItem?> getPasteHotKeyItem() async {
+    return await getHotKeyItem(_pasteKey);
   }
 
-  Future<void> removeHotKeyItemBy(HotKeyItem hotKeyItem) async {
-    await removeHotKeyItemKey(hotKeyItem.type);
-    await removeHotKeyType(hotKeyItem.type);
-    await removeHotKeyItem(hotKeyItem.type);
+  Future<void> removeHotKeyItemByCacheKey(String cacheKey) async {
+    (await getSharedPreferences()).remove(cacheKey);
+    await removeCacheKey(cacheKey);
   }
 
-  Future<void> saveHotKeyItemKey(HotKeyType type) async {
-    List<String> list = await getAllHotKeyItemKeys();
-    if (!list.contains(type.getKeyInfo().$1)) {
-      list.add(type.getKeyInfo().$1);
+  Future<void> removeHotKeyItem(HotKeyItem item) async {
+    var cacheKey = getCacheKey(item);
+    if (cacheKey != null) {
+      await removeHotKeyItemByCacheKey(cacheKey);
     }
-    (await getSharedPreferences()).setStringList(_allHotKeyItemKeys, list);
   }
 
-  Future<List<String>> getAllHotKeyItemKeys() async {
-    var list = (await getSharedPreferences()).getStringList(_allHotKeyItemKeys) ?? [];
+  Future<void> saveCacheKey(String cacheKey) async {
+    List<String> list = await getAllCacheKeys();
+    if (!list.contains(cacheKey)) {
+      if (isCopyKey(cacheKey)) {
+        list.insert(0, cacheKey);
+      } else if (isPasteKey(cacheKey)) {
+        list.insert(list.first == _copyKey ? 1 : 0, cacheKey);
+      } else {
+        list.add(cacheKey);
+      }
+    }
+    (await getSharedPreferences()).setStringList(_allHotKeyCacheKeys, list);
+  }
+
+  Future<void> removeCacheKey(String cacheKey) async {
+    List<String> list = await getAllCacheKeys();
+    list.remove(cacheKey);
+    (await getSharedPreferences()).setStringList(_allHotKeyCacheKeys, list);
+  }
+
+  Future<List<String>> getAllCacheKeys() async {
+    var list =
+        (await getSharedPreferences()).getStringList(_allHotKeyCacheKeys) ?? [];
+    // 复制和粘贴排在头两位
+    if (list.isNotEmpty &&
+        (list.first != _copyKey ||
+            (list.length >= 2 && list[1] != _pasteKey))) {
+      list.remove(_copyKey);
+      list.remove(_pasteKey);
+      list.insert(0, _pasteKey);
+      list.insert(0, _copyKey);
+    }
+
     var set = Set<String>.from(list);
     return set.toList();
   }
 
-  Future<void> removeHotKeyItemKey(HotKeyType type) async {
-    List<String> list = await getAllHotKeyItemKeys();
-    list.remove(type.getKeyInfo().$1);
-    (await getSharedPreferences()).setStringList(_allHotKeyItemKeys, list);
+  Future<List<HotKeyItem>> getAllHotKeyItems() async {
+    List<HotKeyItem> list = [];
+    var keys = await getAllCacheKeys();
+    for (var cacheKey in keys) {
+      var hotKeyItem = await getHotKeyItem(cacheKey);
+      if (hotKeyItem != null) {
+        list.add(hotKeyItem);
+      }
+    }
+
+    // 默认添加复制和粘贴
+    if (!isContains(HotKeyType.paste, list)) {
+      var pasteItem = await getPasteHotKeyItem();
+      pasteItem ??= createKeyItem(HotKeyType.paste);
+      list.insert(0, pasteItem);
+      await saveHotKeyItem(pasteItem);
+    }
+
+    if (!isContains(HotKeyType.copy, list)) {
+      var copyItem = await getCopyHotKeyItem();
+      copyItem ??= createKeyItem(HotKeyType.copy);
+      list.insert(0, copyItem);
+      await saveHotKeyItem(copyItem);
+    }
+
+    return list;
   }
 
-  Future<void> saveHotKeyType(HotKeyType type) async {
-    (await getSharedPreferences()).setInt("${type.getKeyInfo().$1}HotKeyType", type.index);
-  }
-
-  Future<HotKeyType?> getHotKeyType(String key) async {
-    var index = (await getSharedPreferences()).getInt(key);
-    if (index != null) {
-      return HotKeyType.values[index];
+  Future<HotKeyItem?> getHotKeyItemByType(HotKeyType type) async {
+    var items = await getAllHotKeyItems();
+    for (var item in items) {
+      if (item.type == type) {
+        return item;
+      }
     }
     return null;
   }
 
-  Future<void> removeHotKeyType(HotKeyType type) async {
-    (await getSharedPreferences()).remove("${type.getKeyInfo().$1}HotKeyType");
-  }
-
-  Future<List<HotKeyItem>> getAllHotKeyItems() async {
-    List<HotKeyItem> list = [];
-    var keys = await getAllHotKeyItemKeys();
-    for (var key in keys) {
-      var hotKeyType = await getHotKeyType("${key}HotKeyType");
-      if (hotKeyType != null) {
-        var hotKeyItem = await getHotKeyItem(hotKeyType);
-        if (hotKeyItem != null) {
-          list.add(hotKeyItem);
-        }
+  Future<HotKeyItem?> getHotKeyItemByKey(HotKey hotKey) async {
+    var items = await getAllHotKeyItems();
+    for (var item in items) {
+      if (item.hotKey?.isTheSame(hotKey) == true) {
+        return item;
       }
     }
-    return list;
+    return null;
+  }
+
+  bool isContains(HotKeyType type, List<HotKeyItem> items) {
+    var isContainsType = false;
+    for (var item in items) {
+      if (item.type == type) {
+        isContainsType = true;
+        break;
+      }
+    }
+    return isContainsType;
   }
 }
 

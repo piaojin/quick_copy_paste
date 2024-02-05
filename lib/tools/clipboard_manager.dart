@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:keypress_simulator/keypress_simulator.dart';
 import 'package:flutter/services.dart';
@@ -46,6 +47,35 @@ class ClipboardManager {
     if (completion != null) {
       completion();
     }
+  }
+
+  Future<void> simulateWithHotKey(HotKey hotKey, [SimulateCompletion? completion]) async {
+    await simulateKey(hotKey.keyCode.logicalKey, getModifiers(hotKey), completion: completion);
+  }
+
+  Future<void> simulateKey(LogicalKeyboardKey key, List<ModifierKey> modifiers, {SimulateCompletion? completion}) async {
+    await _keyPressSimulator.simulateKeyPress(
+      key: key,
+      modifiers: modifiers,
+    );
+
+    await _keyPressSimulator.simulateKeyPress(
+      key: key,
+      modifiers: modifiers,
+      keyDown: false,
+    );
+
+    if (completion != null) {
+      completion();
+    }
+  }
+
+  List<ModifierKey> getModifiers(HotKey hotKey) {
+    List<ModifierKey> modifiers = [];
+    hotKey.modifiers?.forEach((item) {
+      modifiers.add(item.modifierKey);
+    });
+    return modifiers;
   }
 
   Future<String?> getTextFromSystemClipboard() async {

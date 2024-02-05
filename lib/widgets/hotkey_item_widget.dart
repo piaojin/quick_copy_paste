@@ -53,11 +53,32 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
     setState(() {});
   }
 
-  void handleTapAction() {
+  void handleTapItemAction() {
     if (widget.didSelectClosure != null) {
       widget.didSelectClosure!(widget.index);
     }
     setState(() {});
+  }
+
+  void handleTapCustomHotKeyAction() {
+    if (widget.item.isSelect && widget.item.type == HotKeyType.custom) {
+      widget.item.isSelectCustomHotKey = !widget.item.isSelectCustomHotKey;
+      widget.item.isSelectReplacementHotKey = false;
+      setState(() {});
+    } else {
+      handleTapItemAction();
+    }
+  }
+
+  void handleTapReplacementHotKeyAction() {
+    if (widget.item.isSelect && widget.item.type == HotKeyType.custom) {
+      widget.item.isSelectReplacementHotKey =
+          !widget.item.isSelectReplacementHotKey;
+      widget.item.isSelectCustomHotKey = false;
+      setState(() {});
+    } else {
+      handleTapItemAction();
+    }
   }
 
   void handleRemoveHotKeyAction() {
@@ -79,7 +100,7 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
 
     return GestureDetector(
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.only(top: 10, left: 10, right: 10),
         child: Container(
           decoration: BoxDecoration(
             border: Border.fromBorderSide(BorderSide(
@@ -94,23 +115,93 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
               children: [
                 Row(
                   children: [
-                    Checkbox(
-                      value: widget.item.isEnable,
-                      activeColor: const Color.fromARGB(255, 30, 144, 255),
-                      onChanged: (bool? value) {
-                        handleCheckBoxAction(value ?? false);
-                      },
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Checkbox(
+                        value: widget.item.isEnable,
+                        activeColor: const Color.fromARGB(255, 30, 144, 255),
+                        onChanged: (bool? value) {
+                          handleCheckBoxAction(value ?? false);
+                        },
+                      ),
                     ),
-                    Text(widget.item.title),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: GestureDetector(
+                        onTap: handleTapCustomHotKeyAction,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            border: Border.fromBorderSide(BorderSide(
+                                width: 2,
+                                color: widget.item.getUIInfo().$1,
+                                style: () {
+                                  if (widget.item.type == HotKeyType.custom &&
+                                      widget.item.isSelectCustomHotKey) {
+                                    return BorderStyle.solid;
+                                  }
+                                  return BorderStyle.none;
+                                }())
+                                ),
+                          ),
+                          child: Visibility(
+                            visible: () {
+                              if (widget.item.type == HotKeyType.custom && widget.item.customHotKey != null) {
+                                return true;
+                              }
+                              return false;
+                            }(),
+                            replacement: Text(widget.item.title),
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 2),
+                              child: (){
+                                var customReplaceHotKey = widget.item.customHotKey;
+                                if (customReplaceHotKey != null) {
+                                  return HotKeyVirtualView(
+                                    hotKey: customReplaceHotKey);
+                                } else {
+                                  return Text(widget.item.title);
+                                }
+                              }(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: Container(),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 8, right: 2),
-                      child: Offstage(
-                        offstage: widget.item.hotKey == null,
-                        child: HotKeyVirtualView(
-                            hotKey: widget.item.hotKey ?? _hotKey),
+                      padding: const EdgeInsets.only(top: 6),
+                      child: GestureDetector(
+                        onTap: handleTapReplacementHotKeyAction,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            border: Border.fromBorderSide(BorderSide(
+                                width: 2,
+                                color: widget.item.getUIInfo().$1,
+                                style: () {
+                                  if (widget.item.type == HotKeyType.custom &&
+                                      widget.item.isSelectReplacementHotKey) {
+                                    return BorderStyle.solid;
+                                  }
+                                  return BorderStyle.none;
+                                }())),
+                          ),
+                          child: Visibility(
+                            visible: widget.item.hotKey != null,
+                            replacement: const Text("请录制..."),
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 2),
+                              child: Offstage(
+                                offstage: widget.item.hotKey == null,
+                                child: HotKeyVirtualView(
+                                    hotKey: widget.item.hotKey ?? _hotKey),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     Padding(
@@ -143,7 +234,7 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
         ),
       ),
       onTap: () {
-        handleTapAction();
+        handleTapItemAction();
       },
     );
   }

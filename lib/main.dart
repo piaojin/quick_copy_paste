@@ -8,9 +8,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   WindowOptions windowOptions = const WindowOptions(
-    size: Size(300, 350),
+    size: Size(400, 450),
     center: false,
-    minimumSize: Size(300, 350),
+    minimumSize: Size(400, 450),
     skipTaskbar: false,
     title: "快复制",
     titleBarStyle: TitleBarStyle.normal,

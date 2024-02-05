@@ -8,7 +8,6 @@ import '../tools/pj_hotkey_manager.dart';
 import '../widgets/hotkey_item_widget.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
-
 class ManageHotKeyPage extends StatefulWidget {
   ManageHotKeyPage({Key? key, required this.title}) : super(key: key);
 
@@ -41,7 +40,8 @@ class ManageHotKeyPage extends StatefulWidget {
   }
 }
 
-class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+class _ManageHotKeyPageState extends State<ManageHotKeyPage>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   final List<HotKeyItem> _items = [];
   int? _selectIndex;
   bool _isInEditMode = false;
@@ -51,7 +51,7 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     scheduleMicrotask(() async {
-      _items.addAll(await getItems());
+      _items.addAll(await _getItems());
       setState(() {});
     });
 
@@ -75,16 +75,8 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     }
   }
 
-  Future<List<HotKeyItem>> getItems() async {
-    List<HotKeyItem> items = [];
-    var copyItem = await hotKeyCacheManager.getHotKeyItem(HotKeyType.copy);
-    copyItem ??= hotKeyCacheManager.createKeyItem(HotKeyType.copy);
-    items.add(copyItem);
-
-    var pasteItem = await hotKeyCacheManager.getHotKeyItem(HotKeyType.paste);
-    pasteItem ??= hotKeyCacheManager.createKeyItem(HotKeyType.paste);
-    items.add(pasteItem);
-    return items;
+  Future<List<HotKeyItem>> _getItems() async {
+    return await hotKeyCacheManager.getAllHotKeyItems();
   }
 
   void setIsInEditMode(bool isInEditMode) {
@@ -98,14 +90,14 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     });
   }
 
-  Widget createRow(int i) {
+  Widget _buildItem(int i) {
     var item = _items[i];
     return HotKeyItemWidget(
         index: i,
         didSelectClosure: (i) {
           handleSelectAction(i);
         },
-        didUpdateStateClosure: (i, isEnable){
+        didUpdateStateClosure: (i, isEnable) {
           handleUpdateHotKeyState(i, isEnable);
         },
         didRemoveHotKeyClosure: (i) {
@@ -121,10 +113,15 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     }
 
     if (_selectIndex != null) {
-      _items[_selectIndex ?? index].isSelect = false;
+      var oldItem = _items[_selectIndex ?? index];
+      oldItem.isSelect = false;
+      oldItem.isSelectCustomHotKey = false;
+      oldItem.isSelectReplacementHotKey = false;
     }
 
-    _items[index].isSelect = true;
+    var item = _items[index];
+    item.isSelect = true;
+    item.isSelectCustomHotKey = true;
     _selectIndex = index;
     setIsInEditMode(true);
     setState(() {});
@@ -136,34 +133,51 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
 
   void deselectItem() {
     if (_selectIndex != null) {
-      _items[_selectIndex ?? 0].isSelect = false;
+      var item = _items[_selectIndex ?? 0];
+      item.isSelect = false;
       _selectIndex = null;
       setIsInEditMode(false);
+      item.isSelectCustomHotKey = false;
+      item.isSelectReplacementHotKey = false;
+      if (item.hotKey == null &&
+          item.isEnable &&
+          item.type == HotKeyType.custom) {
+        item.isEnable = false;
+      }
       setState(() {});
     }
   }
 
   void handleUpdateHotKeyState(int index, bool isEnable) {
-      _items[index].isEnable = isEnable;
-      var item = _items[index];
-      var hotKey = item.hotKey;
-      if (hotKey != null) {
-        if (isEnable) {
-          pjHotKeyManager.register(item);
-        } else {
-          pjHotKeyManager.unregister(hotKey);
-        }
+    var item = _items[index];
+    var hotKey = item.hotKey;
+    if (hotKey != null) {
+      item.isEnable = isEnable;
+      if (isEnable) {
+        pjHotKeyManager.register(item);
+      } else {
+        pjHotKeyManager.unregister(hotKey);
       }
+      hotKeyCacheManager.updateHotKeyItem(item);
+    } else {
+      if (item.type == HotKeyType.custom) {
+        item.isEnable = false;
+        BotToast.showText(text: "请先录制热键");
+      } else {
+        item.isEnable = isEnable;
+        hotKeyCacheManager.updateHotKeyItem(item);
+      }
+    }
   }
 
   void handleRemoveHotKeyAction(int index) async {
-      var item = _items[index];
-      var hotKey = item.hotKey;
-      if (hotKey != null) {
-        await pjHotKeyManager.unregister(hotKey);
-        await hotKeyCacheManager.removeHotKeyItemBy(item);
-        item.hotKey = null;
-      }
+    var item = _items[index];
+    var hotKey = item.hotKey;
+    if (hotKey != null) {
+      await pjHotKeyManager.unregister(hotKey);
+      await hotKeyCacheManager.removeHotKeyItem(item);
+      item.hotKey = null;
+    }
   }
 
   Future<void> handleRecordHotKeyAction(HotKey newHotKey) async {
@@ -171,38 +185,77 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
       return;
     }
 
-    if (pjHotKeyManager.isConflictWithSystemHotKey(newHotKey)) {
-      BotToast.showText(text: "热键$newHotKey与系统热键冲突，请更换其他热键！");
-      return;
-    }
-
     if (_selectIndex != null) {
       var item = _items[_selectIndex ?? 0];
       var oldHotKey = item.hotKey;
 
-      if(oldHotKey != null && oldHotKey.isTheSame(newHotKey)) {
+      if (oldHotKey != null && oldHotKey.isTheSame(newHotKey)) {
         return;
       }
 
-      if ((oldHotKey?.isTheSame(newHotKey) == false || oldHotKey == null) && await pjHotKeyManager.isDuplicateHotKey(newHotKey)) {
+      var isRecordCustomHotKey =
+          item.type == HotKeyType.custom && item.isSelectCustomHotKey;
+
+      // 选中了自定义热键item,但没选中其中的自定义热键或替换热键.
+      if (item.type == HotKeyType.custom &&
+          !item.isSelectCustomHotKey &&
+          !item.isSelectReplacementHotKey) {
+        return;
+      }
+
+      // 新设置的自定义热键和旧的一样，不做处理。
+      if (isRecordCustomHotKey &&
+          item.customHotKey?.isTheSame(newHotKey) == true) {
+        return;
+      }
+
+      if (!isRecordCustomHotKey &&
+          pjHotKeyManager.isConflictWithSystemHotKey(newHotKey)) {
+        BotToast.showText(text: "热键$newHotKey与系统热键冲突，请更换其他热键！");
+        return;
+      }
+
+      if ((oldHotKey?.isTheSame(newHotKey) == false || oldHotKey == null) &&
+          await pjHotKeyManager.isDuplicateHotKey(newHotKey) &&
+          !isRecordCustomHotKey) {
         BotToast.showText(text: "热键$newHotKey已被设置");
         return;
       }
 
-      if (oldHotKey != null) {
-        await pjHotKeyManager.unregister(oldHotKey);
-      }
-      item.hotKey = newHotKey;
-      setState(() {});
-
-      if (item.isEnable) {
-        await pjHotKeyManager.register(item);
+      if (isRecordCustomHotKey &&
+          await pjHotKeyManager.isDuplicateCustomHotKey(newHotKey)) {
+        BotToast.showText(text: "自定义热键$newHotKey已被设置");
+        return;
       }
 
-      await hotKeyCacheManager.saveHotKeyItem(item);
-      deselectItem();
-      BotToast.showText(text: "录制了快捷键: $newHotKey");
+      if (isRecordCustomHotKey) {
+        setState(() {});
+        // 更新自定义热键时移除旧的自定义热键,在保存新的自定义热键.
+        await hotKeyCacheManager.removeHotKeyItem(item);
+        item.customHotKey = newHotKey;
+        await hotKeyCacheManager.saveHotKeyItem(item);
+      } else {
+        if (oldHotKey != null) {
+          await pjHotKeyManager.unregister(oldHotKey);
+        }
+        item.hotKey = newHotKey;
+        setState(() {});
+
+        if (item.isEnable) {
+          await pjHotKeyManager.register(item);
+        }
+
+        await hotKeyCacheManager.saveHotKeyItem(item);
+        deselectItem();
+        BotToast.showText(text: "录制了热键: $newHotKey");
+      }
     }
+  }
+
+  void handleAddCustomHotKey() {
+    var customItem = HotKeyItem(false, false, "自定义热键", HotKeyType.custom);
+    _items.add(customItem);
+    setState(() {});
   }
 
   @override
@@ -214,39 +267,47 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage> with AutomaticKeepA
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
+
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 251, 251, 251),
-      body: Stack(
-      children: [
-        Positioned(
-          child: Offstage(
-            offstage: true,
-            child: HotKeyRecorder(
-              onHotKeyRecorded: (hotKey) {
-                handleRecordHotKeyAction(hotKey);
-              },
-            ),
-          ),
+        backgroundColor: const Color.fromARGB(255, 251, 251, 251),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: const Color.fromARGB(255, 30, 144, 255),
+          foregroundColor: Colors.white,
+          tooltip: "添加自定义热键",
+          onPressed: () => {handleAddCustomHotKey()},
+          child: const Icon(Icons.add),
         ),
-        Positioned(
-          child: GestureDetector(
-            child: ListView.builder(
-              itemCount: _items.length,
-              itemBuilder: (BuildContext context, int position) {
-                return createRow(position);
-              },
+        body: Stack(
+          children: [
+            Positioned(
+              child: Offstage(
+                offstage: true,
+                child: HotKeyRecorder(
+                  onHotKeyRecorded: (hotKey) {
+                    handleRecordHotKeyAction(hotKey);
+                  },
+                ),
+              ),
             ),
-            onTap: () {
-              handleDeselectAction();
-            },
-          ),
-        ),
-      ],
-    )
+            Positioned(
+              child: GestureDetector(
+                child: ListView.builder(
+                  itemCount: _items.length,
+                  itemBuilder: (BuildContext context, int position) {
+                    return _buildItem(position);
+                  },
+                ),
+                onTap: () {
+                  handleDeselectAction();
+                },
+              ),
+            ),
+          ],
+        )
         // This trailing comma makes auto-formatting nicer for build methods.
         );
   }
-  
+
   @override
   bool get wantKeepAlive => true;
 }

@@ -1,4 +1,5 @@
 import 'package:bot_toast/bot_toast.dart';
+import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pasteboard/pasteboard.dart';
 
@@ -28,31 +29,11 @@ class PJHotKeyCacheManager {
     if (hotKeyItem.isEnable && hotKey != null) {
       hotKeyManager.register(hotKey,
           keyDownHandler: (triggerHotKey) async {
-            if (hotKey.isTheSame(triggerHotKey) == true) {
-              switch (hotKeyItem.type) {
-                case HotKeyType.copy:
-                  await clipboardManager.simulateCtrlC(() {
-                    Future.delayed(const Duration(milliseconds: 500), () async {
-                      String? text = await Pasteboard.text;
-                      text ??= "";
-                      if (text.isNotEmpty) {
-                        eventBusManager.eventBus.fire(CopyPasteEvent(
-                            HotKeyType.copy, ClipboardItem(text)));
-                      }
-                    });
-                  });
-                  break;
-                case HotKeyType.paste:
-                  eventBusManager.eventBus
-                      .fire(CopyPasteEvent(HotKeyType.paste, null));
-                  break;
-              }
-            }
-            BotToast.showText(text: "触发快捷键: $hotKey");
+            await handleTriggerHotKeyEvent(triggerHotKey);
           },
           keyUpHandler: (triggerHotKey) => {
-            if (keyUpHandler != null) {keyUpHandler(triggerHotKey)}
-          });
+                if (keyUpHandler != null) {keyUpHandler(triggerHotKey)}
+              });
     }
   }
 
@@ -69,6 +50,44 @@ class PJHotKeyCacheManager {
     return await hotKeyManager.unregisterAll();
   }
 
+  Future<void> handleTriggerHotKeyEvent(HotKey triggerHotKey) async {
+    var hotKeyItem = await hotKeyCacheManager.getHotKeyItemByKey(triggerHotKey);
+    if (hotKeyItem != null) {
+      switch (hotKeyItem.type) {
+        case HotKeyType.copy:
+          await clipboardManager.simulateCtrlC(() {
+            Future.delayed(const Duration(milliseconds: 500), () async {
+              String? text = await Pasteboard.text;
+              text ??= "";
+              if (text.isNotEmpty) {
+                eventBusManager.eventBus
+                    .fire(CopyPasteEvent(HotKeyType.copy, ClipboardItem(text)));
+              }
+            });
+          });
+          break;
+        case HotKeyType.paste:
+          eventBusManager.eventBus.fire(CopyPasteEvent(HotKeyType.paste, null));
+          break;
+        case HotKeyType.custom:
+          var customHotKey = hotKeyItem.customHotKey;
+          if (customHotKey != null) {
+            await clipboardManager.simulateWithHotKey(customHotKey);
+          }
+          break;
+      }
+      BotToast.showText(text: "触发快捷键: $triggerHotKey");
+    }
+  }
+
+  List<ModifierKey> getModifiers(HotKey hotKey) {
+    List<ModifierKey> modifiers = [];
+    hotKey.modifiers?.forEach((item) {
+      modifiers.add(item.modifierKey);
+    });
+    return modifiers;
+  }
+
   Future<bool> isDuplicateHotKey(HotKey hotKey) async {
     var list = await hotKeyCacheManager.getAllHotKeyItems();
     for (var item in list) {
@@ -79,11 +98,25 @@ class PJHotKeyCacheManager {
     return false;
   }
 
+  Future<bool> isDuplicateCustomHotKey(HotKey hotKey) async {
+    var list = await hotKeyCacheManager.getAllHotKeyItems();
+    for (var item in list) {
+      if (item.customHotKey?.isTheSame(hotKey) == true) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool isConflictWithSystemHotKey(HotKey hotKey) {
     var keyCodeIndex = hotKey.keyCode.index;
-    var isCharacter = keyCodeIndex >= KeyCode.keyC.index && keyCodeIndex <= KeyCode.keyZ.index;
+    var isCharacter = keyCodeIndex >= KeyCode.keyC.index &&
+        keyCodeIndex <= KeyCode.keyZ.index;
     var modifiers = hotKey.modifiers;
-    if (modifiers != null && modifiers.length == 1 && modifiers.first == KeyModifier.meta && isCharacter) {
+    if (modifiers != null &&
+        modifiers.length == 1 &&
+        modifiers.first == KeyModifier.meta &&
+        isCharacter) {
       return true;
     }
     return false;

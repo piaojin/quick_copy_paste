@@ -28,12 +28,18 @@ class ClipboardRecordPage extends StatefulWidget {
   State<ClipboardRecordPage> createState() => _ClipboardRecordPageState();
 }
 
-class _ClipboardRecordPageState extends State<ClipboardRecordPage> with AutomaticKeepAliveClientMixin {
-
+class _ClipboardRecordPageState extends State<ClipboardRecordPage>
+    with AutomaticKeepAliveClientMixin {
   final List<ClipboardItem> _items = [];
   late StreamSubscription copyPasteSubscription;
   late var scrollController = ScrollController();
-  late var emptyWidget = const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.center, children: [Icon(Icons.copy_sharp), Text("暂无数据")],),);
+  late var emptyWidget = const Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [Icon(Icons.copy_sharp), Text("暂无数据")],
+    ),
+  );
 
   @override
   bool get wantKeepAlive => true;
@@ -41,7 +47,8 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
   @override
   void initState() {
     super.initState();
-    copyPasteSubscription = eventBusManager.eventBus.on<CopyPasteEvent>().listen((event) {
+    copyPasteSubscription =
+        eventBusManager.eventBus.on<CopyPasteEvent>().listen((event) {
       handleCopyPasteEvent(event);
     });
   }
@@ -54,37 +61,43 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
 
   void handleCopyPasteEvent(CopyPasteEvent event) {
     switch (event.type) {
-        case HotKeyType.copy:
-          var item = event.item;
-          if (item != null) {
-            _items.add(item);
-            setState(() {
-              Future.delayed(const Duration(milliseconds: 500), () async {
-                if (_items.isNotEmpty && scrollController.hasClients) {
-                  scrollController.animateTo(scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.bounceIn);
-                } 
+      case HotKeyType.copy:
+        var item = event.item;
+        if (item != null) {
+          _items.add(item);
+          setState(() {
+            Future.delayed(const Duration(milliseconds: 500), () async {
+              if (_items.isNotEmpty && scrollController.hasClients) {
+                scrollController.animateTo(
+                    scrollController.position.maxScrollExtent,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.bounceIn);
+              }
             });
-            });
+          });
           String text = item.text ?? "";
           BotToast.showText(text: "收到event bus: $text");
         }
         break;
-        case HotKeyType.paste:
-          if (_items.isEmpty) {
-            return;
-          }
-          // 取到列表的首行数据并且设置到系统粘贴板里，在模拟粘贴。
-          var text = _items.first.text;
-          if (text != null) {
-            scheduleMicrotask(() async {
-                Pasteboard.writeText(text);
-                await clipboardManager.simulateCtrlV(null);
-                _items.removeAt(0);
-                setState(() {});
-            });
-          }
-          break; 
-      }
+      case HotKeyType.paste:
+        if (_items.isEmpty) {
+          return;
+        }
+        // 取到列表的首行数据并且设置到系统粘贴板里，在模拟粘贴。
+        var text = _items.first.text;
+        if (text != null) {
+          scheduleMicrotask(() async {
+            Pasteboard.writeText(text);
+            await clipboardManager.simulateCtrlV(null);
+            _items.removeAt(0);
+            setState(() {});
+          });
+        }
+        break;
+
+      case HotKeyType.custom:
+        break;
+    }
   }
 
   void handleRemoveItemAction(ClipboardItem item) {
@@ -95,9 +108,11 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
   Widget createRow(int i) {
     var item = _items[i];
     item.index = i;
-    return ClipboardItemWidget(item: item, didTapRemoveClosure: (removeItem) {
-      handleRemoveItemAction(removeItem);
-    });
+    return ClipboardItemWidget(
+        item: item,
+        didTapRemoveClosure: (removeItem) {
+          handleRemoveItemAction(removeItem);
+        });
   }
 
   @override
@@ -111,14 +126,16 @@ class _ClipboardRecordPageState extends State<ClipboardRecordPage> with Automati
     // than having to individually change instances of widgets.
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 251, 251, 251),
-      body: _items.isNotEmpty ? ListView.builder(
-        itemCount: _items.length,
-        itemBuilder: (BuildContext context, int position) {
-          return createRow(position);
-        },
-        controller: scrollController,
-      ) : emptyWidget,
-       // This trailing comma makes auto-formatting nicer for build methods.
+      body: _items.isNotEmpty
+          ? ListView.builder(
+              itemCount: _items.length,
+              itemBuilder: (BuildContext context, int position) {
+                return createRow(position);
+              },
+              controller: scrollController,
+            )
+          : emptyWidget,
+      // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
