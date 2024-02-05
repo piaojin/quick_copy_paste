@@ -8,7 +8,8 @@ class HotKeyItemWidget extends StatefulWidget {
       required this.index,
       this.didSelectClosure,
       this.didUpdateStateClosure,
-      this.didRemoveHotKeyClosure,
+      this.didTapClearHotKeyClosure,
+      this.didTapRemoveHotKeyClosure,
       required this.item})
       : super(key: key);
 
@@ -25,7 +26,8 @@ class HotKeyItemWidget extends StatefulWidget {
   final HotKeyItem item;
   final Function(int)? didSelectClosure;
   final Function(int, bool)? didUpdateStateClosure;
-  final Function(int)? didRemoveHotKeyClosure;
+  final Function(int)? didTapClearHotKeyClosure;
+  final Function(int)? didTapRemoveHotKeyClosure;
 
   @override
   State<HotKeyItemWidget> createState() => _HotKeyItemWidgetState();
@@ -81,11 +83,17 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
     }
   }
 
-  void handleRemoveHotKeyAction() {
-    if (widget.didRemoveHotKeyClosure != null) {
-      widget.didRemoveHotKeyClosure!(widget.index);
+  void handleClearHotKeyAction() {
+    if (widget.didTapClearHotKeyClosure != null) {
+      widget.didTapClearHotKeyClosure!(widget.index);
     }
     setState(() {});
+  }
+
+  void handleRemoveHotKeyAction() {
+    if (widget.didTapRemoveHotKeyClosure != null) {
+      widget.didTapRemoveHotKeyClosure!(widget.index);
+    }
   }
 
   @override
@@ -117,6 +125,22 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
+                      child: Offstage(
+                        offstage: !widget.item.isSelect || widget.item.type != HotKeyType.custom,
+                        child: SizedBox(
+                          width: 30,
+                          height: 30,
+                          child: IconButton(
+                              onPressed: handleRemoveHotKeyAction,
+                              splashRadius: 20.0,
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.remove_circle_outlined,
+                                  color: Colors.red)),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
                       child: Checkbox(
                         value: widget.item.isEnable,
                         activeColor: const Color.fromARGB(255, 30, 144, 255),
@@ -141,12 +165,12 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
                                     return BorderStyle.solid;
                                   }
                                   return BorderStyle.none;
-                                }())
-                                ),
+                                }())),
                           ),
                           child: Visibility(
                             visible: () {
-                              if (widget.item.type == HotKeyType.custom && widget.item.customHotKey != null) {
+                              if (widget.item.type == HotKeyType.custom &&
+                                  widget.item.customHotKey != null) {
                                 return true;
                               }
                               return false;
@@ -154,11 +178,12 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
                             replacement: Text(widget.item.title),
                             child: Padding(
                               padding: const EdgeInsets.only(right: 2),
-                              child: (){
-                                var customReplaceHotKey = widget.item.customHotKey;
+                              child: () {
+                                var customReplaceHotKey =
+                                    widget.item.customHotKey;
                                 if (customReplaceHotKey != null) {
                                   return HotKeyVirtualView(
-                                    hotKey: customReplaceHotKey);
+                                      hotKey: customReplaceHotKey);
                                 } else {
                                   return Text(widget.item.title);
                                 }
@@ -214,7 +239,7 @@ class _HotKeyItemWidgetState extends State<HotKeyItemWidget> {
                             height: 30,
                             child: IconButton(
                                 onPressed: () {
-                                  handleRemoveHotKeyAction();
+                                  handleClearHotKeyAction();
                                 },
                                 splashRadius: 20.0,
                                 padding: EdgeInsets.zero,

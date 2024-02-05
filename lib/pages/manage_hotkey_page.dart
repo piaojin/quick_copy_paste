@@ -100,7 +100,10 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage>
         didUpdateStateClosure: (i, isEnable) {
           handleUpdateHotKeyState(i, isEnable);
         },
-        didRemoveHotKeyClosure: (i) {
+        didTapClearHotKeyClosure: (i) {
+          handleClearHotKeyAction(i);
+        },
+        didTapRemoveHotKeyClosure: (i) {
           handleRemoveHotKeyAction(i);
         },
         item: item);
@@ -170,13 +173,28 @@ class _ManageHotKeyPageState extends State<ManageHotKeyPage>
     }
   }
 
-  void handleRemoveHotKeyAction(int index) async {
+  void handleClearHotKeyAction(int index) async {
     var item = _items[index];
     var hotKey = item.hotKey;
     if (hotKey != null) {
       await pjHotKeyManager.unregister(hotKey);
       await hotKeyCacheManager.removeHotKeyItem(item);
       item.hotKey = null;
+    }
+  }
+
+  void handleRemoveHotKeyAction(int index) async {
+    if (_selectIndex == index) {
+      deselectItem();
+    }
+
+    var item = _items[index];
+    var hotKey = item.hotKey;
+    _items.removeAt(index);
+    setState(() {});
+    if (hotKey != null) {
+      await pjHotKeyManager.unregister(hotKey);
+      await hotKeyCacheManager.removeHotKeyItem(item);
     }
   }
 
